@@ -19,7 +19,7 @@ public class Transaction {
 	}
 
 	public static Transaction valueOf(List<TxIn> txIns, List<TxOut> txOuts) {
-		if (txIns == null || txIns.isEmpty() || txOuts == null || txOuts.isEmpty()) {
+		if (txIns == null || txOuts == null || txOuts.isEmpty()) {
 			return null;
 		}
 		return new Transaction(txIns, txOuts);

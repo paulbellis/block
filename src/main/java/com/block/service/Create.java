@@ -1,11 +1,14 @@
 package com.block.service;
 
+import java.math.BigDecimal;
+
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import com.block.commons.JSON;
 import com.block.model.AccountBalance;
 import com.block.model.AccountTransfer;
+import com.block.model.Ledger1;
 
 import spark.Request;
 import spark.Response;
@@ -15,9 +18,9 @@ public class Create implements Route {
 
 	private static Logger log = LogManager.getLogger(Create.class);
 	private DummyStore db;
-	private Ledger ledger;
+	private Ledger1 ledger;
 	
-	public Create(DummyStore db, Ledger ledger) {
+	public Create(DummyStore db, Ledger1 ledger) {
 		this.db = db;
 		this.ledger = ledger;
 	}
@@ -26,7 +29,7 @@ public class Create implements Route {
 	public Object handle(Request request, Response response) throws Exception {
 		AccountBalance ab = (AccountBalance) JSON.fromJson(request.body(), AccountBalance.class);
 		db.put(ab.getAccountId(),ab);
-		ledger.create(ab.getAccountId(),ab.getBalance());
+		ledger.createTransaction(ab.getAccountId(),new BigDecimal(ab.getBalance()));
 		return "Ok";
 	}
 

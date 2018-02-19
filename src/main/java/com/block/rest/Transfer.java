@@ -6,6 +6,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.eclipse.jetty.http.HttpStatus;
 
+import com.block.commons.AccountNotExistException;
 import com.block.commons.InsufficientFundsException;
 import com.block.commons.JSON;
 import com.block.model.AccountTransfer;
@@ -34,6 +35,11 @@ public class Transfer implements Route {
 			transferService.transfer(transfer);
 		}
 		catch (InsufficientFundsException e) {
+			log.error(e.getMessage());
+			response.status(HttpStatus.PRECONDITION_FAILED_412);
+			return JSON.toJson(transfer);
+		}
+		catch (AccountNotExistException e) {
 			log.error(e.getMessage());
 			response.status(HttpStatus.PRECONDITION_FAILED_412);
 			return JSON.toJson(transfer);

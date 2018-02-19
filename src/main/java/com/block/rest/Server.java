@@ -5,6 +5,7 @@ import static spark.Spark.put;
 import static spark.Spark.post;
 import static spark.Spark.stop;
 
+import com.block.model.Ledger1;
 import com.block.service.Create;
 import com.block.service.DummyStore;
 import com.block.service.Dump;
@@ -15,7 +16,7 @@ import com.block.service.TransferService;
 public class Server {
 
 	private static DummyStore db = new DummyStore();
-	private static Ledger ledger = new Ledger(null);
+	private static Ledger1 ledger = new Ledger1(null);
 	private static TransferService transferService = new TransferService(db, ledger);
 	
 
