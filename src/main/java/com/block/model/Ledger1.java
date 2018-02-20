@@ -140,7 +140,7 @@ public class Ledger1 {
 					balances.put(uTxO.getAddress(), balance);
 					updateMoneyInSystem(balance);
 				}
-				transactionPool.add(t);
+				addTransactionToPool(t);
 			}
 
 			if (getMoneyInSystem().compareTo(originalMoneyInSystem.add(amount)) != 0) {
@@ -256,12 +256,68 @@ public class Ledger1 {
 				System.exit(1);
 			}
 			if (getBalance(from).compareTo(fromBefore.subtract(amount))!=0) {
-				log.error("Audit error");
-				System.exit(1);
+				Queue<UnspentTxOut> q = unspentTxOutsMap.get(from);
+				q.forEach((UnspentTxOut uTxo)-> {
+					System.out.println("audit,"+uTxo);
+				});
+				BigDecimal u = calculateBalance(q);
+				BigDecimal t = getBalance(from);
+				log.error("Audit error" + u + t);
+				blockChainLedger.stream()
+				.map((Block b) -> b.getTransactions())
+				.flatMap(List::stream)
+				.collect(Collectors.toList())
+				.stream()
+				.map((Transaction tx1) -> tx1.getTxOuts())
+				.flatMap(List::stream)
+				.collect(Collectors.toList())
+				.stream()
+				.filter((TxOut txOut1) -> txOut1.getAddress().equals(from))
+				.forEach((TxOut txOut1) -> {System.out.println(txOut1);} );
+				blockChainLedger.stream()
+				.map((Block b) -> b.getTransactions())
+				.flatMap(List::stream)
+				.collect(Collectors.toList())
+				.stream()
+				.map((Transaction tx1) -> tx1.getTxIns())
+				.flatMap(List::stream)
+				.collect(Collectors.toList())
+				.stream()
+				.filter((TxIn txin1) -> txin1.getSignature().contains(from))
+				.forEach((TxIn txin1) -> {System.out.println(txin1);} );
+				//System.exit(1);
 			}
 			if (getBalance(to).compareTo(toBefore.add(amount))!=0) {
-				log.error("Audit error");
-				System.exit(1);
+				Queue<UnspentTxOut> q = unspentTxOutsMap.get(to);
+				q.forEach((UnspentTxOut uTxo)-> {
+					System.out.println("audit,"+uTxo);
+				});
+				BigDecimal u = calculateBalance(q);
+				BigDecimal t = getBalance(to);
+				log.error("Audit error" + u + t);
+				blockChainLedger.stream()
+				.map((Block b) -> b.getTransactions())
+				.flatMap(List::stream)
+				.collect(Collectors.toList())
+				.stream()
+				.map((Transaction tx1) -> tx1.getTxOuts())
+				.flatMap(List::stream)
+				.collect(Collectors.toList())
+				.stream()
+				.filter((TxOut txOut1) -> txOut1.getAddress().equals(to))
+				.forEach((TxOut txOut1) -> {System.out.println(txOut1);} );
+				blockChainLedger.stream()
+				.map((Block b) -> b.getTransactions())
+				.flatMap(List::stream)
+				.collect(Collectors.toList())
+				.stream()
+				.map((Transaction tx1) -> tx1.getTxIns())
+				.flatMap(List::stream)
+				.collect(Collectors.toList())
+				.stream()
+				.filter((TxIn txin1) -> txin1.getSignature().contains(to))
+				.forEach((TxIn txin1) -> {System.out.println(txin1);} );
+				//System.exit(1);
 			}
 		} finally {
 			w.unlock();
