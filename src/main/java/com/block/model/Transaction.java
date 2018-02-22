@@ -11,6 +11,10 @@ public class Transaction {
 	private List<TxOut> txOuts;
 	private String description;
 
+	public String toString() {
+		return "[" + id +"," + txIns +"," + txOuts + "," + description + "]";
+	}
+	
 	private Transaction(List<TxIn> txIns, List<TxOut> txOuts) {
 		super();
 		this.txIns = txIns;

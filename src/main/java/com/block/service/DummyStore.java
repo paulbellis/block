@@ -5,6 +5,7 @@ import java.util.TreeMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.block.commons.AccountNotExistException;
 import com.block.commons.InsufficientFundsException;
 import com.block.commons.JSON;
 import com.block.model.AccountBalance;
@@ -42,9 +43,12 @@ public class DummyStore {
 		}
 	}
 
-	public void transfer(String from, String to, int amount, String hash) throws InsufficientFundsException {
+	public void transfer(String from, String to, int amount, String hash) throws InsufficientFundsException, AccountNotExistException {
 		w.lock();
 		try {
+			if (m.get(from)==null || m.get(to)==null) {
+				throw new AccountNotExistException("either " + from + " or " + to);
+			}
 			AccountBalance ab = m.get(from);
 			if (ab.getBalance() >= amount) {
 				ab.setBalance(ab.getBalance() - amount);

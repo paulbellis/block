@@ -62,4 +62,11 @@ public class Block {
 	public int getNonce() {
 		return nonce;
 	}
+
+	@Override
+	public String toString() {
+		return "Block [index=" + index + ", hash=" + hash + ", previousHash=" + previousHash + ", timestamp="
+				+ timestamp + ", transactions=" + transactions + ", difficulty=" + difficulty + ", nonce=" + nonce
+				+ "]";
+	}
 }

@@ -163,13 +163,19 @@ public class Ledger1 {
 	}
 
 	private void addTransactionToPool(Transaction tx) {
-		transactionPool.add(tx);
-		if (transactionPool.size() > MAX_TRANSACTION_SIZE) {
-			Block currentLast = blockChainLedger.get(blockChainLedger.size() - 1);
-			List<Transaction> transList = transactionPool.stream().collect(Collectors.toList());
-			Block b = new Block(currentLast.getHash(), currentLast.getIndex(), transList);
-			blockChainLedger.add(b);
-			transactionPool.remove(tx);
+		try {
+			w.lock();
+			transactionPool.add(tx);
+			if (transactionPool.size() >= MAX_TRANSACTION_SIZE) {
+				Block currentLast = blockChainLedger.get(blockChainLedger.size() - 1);
+				List<Transaction> transList = transactionPool.stream().collect(Collectors.toList());
+				Block b = new Block(currentLast.getHash(), currentLast.getIndex(), transList);
+				blockChainLedger.add(b);
+				transactionPool.remove(tx);
+			}
+		}
+		finally {
+			w.unlock();
 		}
 
 	}
@@ -196,10 +202,10 @@ public class Ledger1 {
 		try {
 			w.lock();
 			if (!accountExists(from)) {
-				throw new AccountNotExistException();
+				throw new AccountNotExistException(from);
 			}
 			if (!accountExists(to)) {
-				throw new AccountNotExistException();
+				throw new AccountNotExistException(to);
 			}
 			if (amount.compareTo(getBalance(from)) > 0 ) {
 				throw new InsufficientFundsException();
@@ -246,9 +252,11 @@ public class Ledger1 {
 				for (UnspentTxOut uTxO : getUnspentTxFromTransaction(tx)) {
 					unspentTxOutsMap.get(uTxO.getAddress())
 							.add(uTxO);
-					BigDecimal balance = calculateBalance(unspentTxOutsMap.get(uTxO.getAddress()));
-					balances.put(uTxO.getAddress(), balance);
 				}
+				BigDecimal newFromBalance = calculateBalance(unspentTxOutsMap.get(from));
+				balances.put(from, newFromBalance);
+				BigDecimal newToBalance = calculateBalance(unspentTxOutsMap.get(to));
+				balances.put(to, newToBalance);
 			}
 			addTransactionToPool(tx);
 			if (getMoneyInSystem().compareTo(originalMoneyInSystem) != 0) {
@@ -356,5 +364,12 @@ public class Ledger1 {
 
 	public String getBlockChainLedger() {
 		return JSON.toJson(blockChainLedger);
+	}
+
+	@Override
+	public String toString() {
+		return "Ledger1 [blockChainLedger=" + blockChainLedger + ", transactionPool=" + transactionPool
+				+ ", unspentTxOutsMap=" + unspentTxOutsMap + ", balances=" + balances + ", moneyInSystem="
+				+ moneyInSystem + "]";
 	}
 }
