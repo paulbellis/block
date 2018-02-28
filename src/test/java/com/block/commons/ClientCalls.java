@@ -90,4 +90,8 @@ public class ClientCalls {
 		return get(url);
 	}
 
+	public static String getBalance(String url) {
+		return get(url);
+	}
+
 }

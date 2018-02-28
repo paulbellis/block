@@ -1,5 +1,7 @@
 package com.block.service;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Random;
@@ -18,7 +20,7 @@ import com.block.commons.Properties;
 import com.block.model.AccountBalance;
 import com.block.rest.Server;
 
-public class TestTransfer {
+public class TestBalanceService {
 
 	private int id = 1;
 
@@ -39,26 +41,10 @@ public class TestTransfer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		for (int i=0;i<100;i++) {
-			createAccount();
-		}
-
-		Random r = new Random();
-		ExecutorService service = Executors.newFixedThreadPool(1);
-		for (int i=0; i<1000; i++ ) {
-			Future<?> f = service.submit(new TransferCallable(String.valueOf(r.nextInt(100)), String.valueOf(r.nextInt(100)), r.nextInt(100)));
-		}
-//		try {
-//			f.get();
-//		} catch (InterruptedException | ExecutionException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-		service.shutdown();
-		service.awaitTermination(1,TimeUnit.DAYS);
-//		Scanner scanner = new Scanner(System.in);
-//		scanner.nextLine();
-//		scanner.close();
+		createAccount();
+		String balance = ClientCalls.getBalance(Properties.getBalanceURL("1"));
+		assertTrue(Integer.valueOf(balance)==100);
+		System.out.println(balance);
 		Server.stopServer();
 	}
 

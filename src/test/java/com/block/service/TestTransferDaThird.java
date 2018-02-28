@@ -62,7 +62,7 @@ public class TestTransferDaThird {
 //			service.submit(tc);
 //			Thread.sleep(250);
 //		}
-		for (int i=0; i<100000; i++) {
+		for (int i=0; i<10000; i++) {
 			TransferCallable tc = new TransferCallable(String.valueOf(r.nextInt(accountCount)), String.valueOf(r.nextInt(accountCount)), r.nextInt(10));
 			service.submit(tc);
 		}

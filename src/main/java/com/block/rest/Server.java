@@ -6,6 +6,7 @@ import static spark.Spark.post;
 import static spark.Spark.stop;
 
 import com.block.model.Ledger1;
+import com.block.service.BalanceService;
 import com.block.service.Create;
 import com.block.service.DummyStore;
 import com.block.service.Dump;
@@ -22,6 +23,7 @@ public class Server {
 
 	public static void start() {
 		get("/ledger", new DumpLedger(ledger));
+		get("/balance/:id", new BalanceService(ledger));
 		get("/dump", new Dump(db));
 		post("/create", new Create(db,ledger));
 		put("/transfer", new Transfer(transferService));

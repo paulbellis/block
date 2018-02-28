@@ -23,4 +23,8 @@ public class Properties {
 		return PROTOCOL+"://"+BASE_URL+":"+PORT+"/transfer";
 	}
 	
+	public static String getBalanceURL(String id) {
+		return PROTOCOL+"://"+BASE_URL+":"+PORT+"/balance/"+id;
+	}
+	
 }
