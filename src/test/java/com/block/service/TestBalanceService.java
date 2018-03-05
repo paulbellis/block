@@ -27,13 +27,13 @@ public class TestBalanceService {
 	private void createAccount() throws ClientProtocolException, IOException {
 		BigDecimal balance = new BigDecimal(100);
 		String accountId = String.valueOf(id++);
-		AccountBalance ab1 = new AccountBalance(accountId, balance.intValue());
+		AccountBalance ab1 = new AccountBalance(accountId, balance.intValue(), 0, 0);
 		ClientCalls.createAccount(Properties.getCreateURL(), ab1);
 	}
 	
 	@Test
 	public void test() throws ClientProtocolException, IOException, InterruptedException {
-		Server.start();
+		Server.start(4567);
 	
 		try {
 			Thread.sleep(3000);

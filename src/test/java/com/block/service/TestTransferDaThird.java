@@ -38,7 +38,7 @@ public class TestTransferDaThird {
 			BigDecimal balance = new BigDecimal(100);
 			String accountId = String.valueOf(i);
 			accountIds.add(accountId);
-			AccountBalance ab1 = new AccountBalance(accountId, balance.intValue());
+			AccountBalance ab1 = new AccountBalance(accountId, balance.intValue(),0,0);
 			ClientCalls.createAccount(Properties.getCreateURL(), ab1);
 		}
 		return accountIds;
@@ -47,7 +47,7 @@ public class TestTransferDaThird {
 	@Test
 	public void testMultiTransfer() throws ClientProtocolException, IOException, InterruptedException {
 		int accountCount = 100;
-		Server.start();
+		Server.start(4567);
 		Thread.sleep(10000);
 		List<String> accountIds = createNAccounts(accountCount);
 		Thread.sleep(10000);

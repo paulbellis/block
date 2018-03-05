@@ -37,33 +37,34 @@ public class DummyStore {
 	public AccountBalance put(String key, AccountBalance value) {
 		w.lock();
 		try {
-			return m.put(key, value);
+			return m.putIfAbsent(key, value);
 		} finally {
 			w.unlock();
 		}
 	}
 
 	public void transfer(String from, String to, int amount, String hash) throws InsufficientFundsException, AccountNotExistException {
-		w.lock();
-		try {
-			if (m.get(from)==null || m.get(to)==null) {
-				throw new AccountNotExistException("either " + from + " or " + to);
+		if (m.get(from)==null || m.get(to)==null) {
+			throw new AccountNotExistException("either " + from + " or " + to);
+		}
+		boolean fromUpdated = false;
+		while (!fromUpdated) {
+			AccountBalance oldFrom = m.get(from);
+			if (oldFrom.getBalance()<amount) {
+				throw new InsufficientFundsException("account " + from + " balance=" + oldFrom.getBalance() + ", amount=" + amount);
 			}
-			AccountBalance ab = m.get(from);
-			if (ab.getBalance() >= amount) {
-				ab.setBalance(ab.getBalance() - amount);
-				ab.setOuts(ab.getOuts() + amount);
-				m.put(from, ab);
-				AccountBalance toAb = m.get(to);
-				toAb.setBalance(toAb.getBalance() + amount);
-				toAb.setIns(toAb.getIns() + amount);
-				m.put(to, toAb);
-			} else {
-				throw new InsufficientFundsException("Insufficient [" + from + "," + to + "," + amount + "," + hash
-						+ "] actual = " + ab.getBalance());
+			AccountBalance newFrom  = new AccountBalance(from, oldFrom.getBalance()-amount, oldFrom.getIns(), oldFrom.getOuts()+amount);
+			if (m.replace(from, oldFrom, newFrom)) {
+				fromUpdated = true;
+				boolean toUpdated = false;
+				while (!toUpdated) {
+					AccountBalance oldTo = m.get(to);
+					AccountBalance newTo = new AccountBalance(to, oldTo.getBalance()+amount, oldFrom.getIns()+amount, oldFrom.getOuts());
+					if (m.replace(to, oldTo, newTo)) {
+						toUpdated = true;
+					}
+				}
 			}
-		} finally {
-			w.unlock();
 		}
 	}
 

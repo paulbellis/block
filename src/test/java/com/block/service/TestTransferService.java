@@ -16,49 +16,41 @@ import org.junit.Test;
 import com.block.commons.ClientCalls;
 import com.block.commons.Properties;
 import com.block.model.AccountBalance;
+import com.block.model.AccountTransfer;
 import com.block.rest.Server;
 
-public class TestTransfer {
+public class TestTransferService {
 
 	private int id = 1;
 
 	private void createAccount() throws ClientProtocolException, IOException {
 		BigDecimal balance = new BigDecimal(100);
 		String accountId = String.valueOf(id++);
-		AccountBalance ab1 = new AccountBalance(accountId, balance.intValue(),0,0);
+		AccountBalance ab1 = new AccountBalance(accountId, balance.intValue(), 0, 0);
 		ClientCalls.createAccount(Properties.getCreateURL(), ab1);
 	}
-	
+
 	@Test
 	public void test() throws ClientProtocolException, IOException, InterruptedException {
 		Server.start(4567);
-	
+
 		try {
 			Thread.sleep(3000);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
-		for (int i=0;i<100;i++) {
+		for (int i = 1; i < 3; i++) {
 			createAccount();
 		}
 
-		Random r = new Random();
-		ExecutorService service = Executors.newFixedThreadPool(1);
-		for (int i=0; i<1000; i++ ) {
-			Future<?> f = service.submit(new TransferCallable(String.valueOf(r.nextInt(100)), String.valueOf(r.nextInt(100)), r.nextInt(100)));
+		AccountTransfer t1 = AccountTransfer.valueOf("1", "2", new BigDecimal(33));
+		try {
+			ClientCalls.sendTransferRequest(Properties.getTransferURL(), t1);
+		} 
+		catch (ClientProtocolException e) {
+		} 
+		catch (IOException e) {
 		}
-//		try {
-//			f.get();
-//		} catch (InterruptedException | ExecutionException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-		service.shutdown();
-		service.awaitTermination(1,TimeUnit.DAYS);
-//		Scanner scanner = new Scanner(System.in);
-//		scanner.nextLine();
-//		scanner.close();
+
 		Server.stopServer();
 	}
 
