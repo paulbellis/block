@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import com.block.manager.MiningManager;
+import com.block.manager.PostBlockManager;
 import com.block.model.Ledger1;
 import com.block.service.BalanceService;
 import com.block.service.BroadcastService;
@@ -51,6 +52,7 @@ public class Server {
 		post("/servers", new PostServersManager(broadcastService));
 		get("/servers", new GetServersManager(broadcastService));
 		get("/mine", new MiningManager(ledger, broadcastService));
+		post("/block", new PostBlockManager(ledger));
 		broadcastService.getNetworkNodes();
 		broadcastService.broadCastMe();
 
