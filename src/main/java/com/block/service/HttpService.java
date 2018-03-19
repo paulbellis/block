@@ -20,7 +20,7 @@ import com.block.commons.ClientCalls;
 
 public class HttpService {
 
-	private static Logger log = LogManager.getLogger(ClientCalls.class);
+	private static Logger log = LogManager.getLogger(HttpService.class);
 
 	public static String getUri(String url) {
 		URIBuilder uri = null;

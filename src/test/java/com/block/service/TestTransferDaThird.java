@@ -47,7 +47,8 @@ public class TestTransferDaThird {
 	@Test
 	public void testMultiTransfer() throws ClientProtocolException, IOException, InterruptedException {
 		int accountCount = 100;
-		Server.start(4567);
+		Server server = new Server("http://localhost",4567);
+		server.start();
 		Thread.sleep(10000);
 		List<String> accountIds = createNAccounts(accountCount);
 		Thread.sleep(10000);
@@ -93,7 +94,7 @@ public class TestTransferDaThird {
 //		}
 //		log.info(m);
 
-		Server.stopServer();
+		server.stopServer();
 	}
 
 }

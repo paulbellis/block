@@ -8,11 +8,11 @@ import spark.Request;
 import spark.Response;
 import spark.Route;
 
-public class DumpLedger implements Route {
+public class GetBlockchainManager implements Route {
 
 	private Ledger1 ledger;
 
-	public DumpLedger(Ledger1 ledger) {
+	public GetBlockchainManager(Ledger1 ledger) {
 		this.ledger = ledger;
 	}
 

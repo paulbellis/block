@@ -1,17 +1,20 @@
 package com.block.rest;
 
 import static spark.Spark.get;
-import static spark.Spark.port;
-import static spark.Spark.post;
 import static spark.Spark.put;
+import static spark.Spark.post;
 import static spark.Spark.stop;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
-import com.block.manager.MiningManager;
+import static spark.Spark.port;
+
+import com.block.commons.JSON;
+import com.block.model.Block;
 import com.block.model.Ledger1;
 import com.block.service.BalanceService;
 import com.block.service.BroadcastService;
@@ -19,12 +22,14 @@ import com.block.service.CreateAccountManager;
 import com.block.service.DummyStore;
 import com.block.service.Dump;
 import com.block.service.GetBlockchainManager;
-import com.block.service.GetServersManager;
-import com.block.service.PostServersManager;
+import com.block.service.Ledger;
 import com.block.service.TransactionManager;
 import com.block.service.TransferService;
+import com.google.gson.reflect.TypeToken;
 
-public class Server {
+import spark.Route;
+
+public class ServerIgnite {
 
 	private DummyStore db = new DummyStore();
 	private final String url;
@@ -33,7 +38,7 @@ public class Server {
 	private Ledger1 ledger;
 	private TransferService transferService = new TransferService(db, ledger);
 
-	public Server(String url, int port) {
+	public ServerIgnite(String url, int port) {
 		this.url = url;
 		this.port = port;
 		broadcastService = new BroadcastService(url,port);
@@ -48,9 +53,16 @@ public class Server {
 		post("/create", new CreateAccountManager(db,ledger));
 		put("/transfer", new TransferManager(transferService));
 		post("/transaction",new TransactionManager(ledger));
-		post("/servers", new PostServersManager(broadcastService));
-		get("/servers", new GetServersManager(broadcastService));
-		get("/mine", new MiningManager(ledger, broadcastService));
+		post("/servers", (request,response) -> {
+			List<String> addresses = JSON.fromJsonToList(request.body(),new TypeToken<List<String>>(){}.getType()); 
+			if (!addresses.isEmpty()) {
+				broadcastService.addAddresses(addresses);
+			}
+			return 0;
+		});
+		get("/servers", (request,response) -> {
+			return broadcastService.getAddresses();
+		});
 		broadcastService.getNetworkNodes();
 		broadcastService.broadCastMe();
 
@@ -71,7 +83,7 @@ public class Server {
 	}
 
 	public static void main(String[] args) {
-		Server server = new Server(args[0],Integer.valueOf(args[1]));
+		ServerIgnite server = new ServerIgnite(args[0],Integer.valueOf(args[1]));
 		server.init((args.length>2?args[2]:null));
 		server.start();
 //		Server server1 = new Server("http://localhost",4567);

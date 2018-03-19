@@ -31,7 +31,8 @@ public class TestTransfer {
 	
 	@Test
 	public void test() throws ClientProtocolException, IOException, InterruptedException {
-		Server.start(4567);
+		Server server = new Server("http://localhost",4567);
+		server.start();
 	
 		try {
 			Thread.sleep(3000);
@@ -59,7 +60,7 @@ public class TestTransfer {
 //		Scanner scanner = new Scanner(System.in);
 //		scanner.nextLine();
 //		scanner.close();
-		Server.stopServer();
+		server.stopServer();
 	}
 
 }

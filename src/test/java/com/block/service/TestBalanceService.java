@@ -33,7 +33,8 @@ public class TestBalanceService {
 	
 	@Test
 	public void test() throws ClientProtocolException, IOException, InterruptedException {
-		Server.start(4567);
+		Server server = new Server("http://localhost",4567);
+		server.start();
 	
 		try {
 			Thread.sleep(3000);
@@ -45,7 +46,7 @@ public class TestBalanceService {
 		String balance = ClientCalls.getBalance(Properties.getBalanceURL("1"));
 		assertTrue(Integer.valueOf(balance)==100);
 		System.out.println(balance);
-		Server.stopServer();
+		server.stopServer();
 	}
 
 }

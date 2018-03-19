@@ -1,32 +1,19 @@
 package com.block.model;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
@@ -36,12 +23,6 @@ import org.apache.log4j.Logger;
 import com.block.commons.AccountNotExistException;
 import com.block.commons.InsufficientFundsException;
 import com.block.commons.JSON;
-import com.block.model.AccountBalance;
-import com.block.model.Block;
-import com.block.model.Transaction;
-import com.block.model.TxIn;
-import com.block.model.TxOut;
-import com.block.model.UnspentTxOut;
 import com.block.service.BroadcastService;
 
 public class Ledger1 {
@@ -56,9 +37,11 @@ public class Ledger1 {
 	private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock(true);
 	private final Lock r = rwl.readLock();
 	private final Lock w = rwl.writeLock();
+	private BroadcastService broadcastService;
 
-	public Ledger1(List<Block> blockChainLedger) {
-		log.debug("CREATING LEDGER");
+	public Ledger1(List<Block> blockChainLedger, BroadcastService broadcastService) {
+		this.broadcastService = broadcastService;
+		log.debug("CREATING LEDGER1");
 		if (blockChainLedger == null) {
 			this.blockChainLedger = new ArrayList<>();
 			List<Transaction> list = new ArrayList<>();
@@ -88,25 +71,17 @@ public class Ledger1 {
 	}
 
 	private List<TxIn> getTxInsFromBlock(Block b) {
-		return b.getTransactions()
-				.stream()
-				.map(Transaction::getTxIns)
-				.flatMap(List::stream)
+		return b.getTransactions().stream().map(Transaction::getTxIns).flatMap(List::stream)
 				.collect(Collectors.toList());
 	}
 
 	private List<TxIn> getAllTxInsFromLedger() {
-		return blockChainLedger.stream()
-				.map((Block b) -> getTxInsFromBlock(b))
-				.flatMap(List::stream)
+		return blockChainLedger.stream().map((Block b) -> getTxInsFromBlock(b)).flatMap(List::stream)
 				.collect(Collectors.toList());
 	}
 
 	private List<TxIn> getAllTxInsFromTransactionPoool() {
-		return transactionPool
-				.stream()
-				.map((Transaction t) -> t.getTxIns())
-				.flatMap(List::stream)
+		return transactionPool.stream().map((Transaction t) -> t.getTxIns()).flatMap(List::stream)
 				.collect(Collectors.toList());
 	}
 
@@ -120,39 +95,28 @@ public class Ledger1 {
 	}
 
 	private List<UnspentTxOut> getUnspentTxFromBlock(Block block) {
-		return block.getTransactions()
-				.stream()
-				.map((Transaction t) -> getUnspentTxFromTransaction(t))
-				.flatMap(List::stream)
-				.collect(Collectors.toList());
+		return block.getTransactions().stream().map((Transaction t) -> getUnspentTxFromTransaction(t))
+				.flatMap(List::stream).collect(Collectors.toList());
 	}
 
 	private List<UnspentTxOut> getAllUnspentTxFromLedger() {
-		return blockChainLedger.stream()
-				.map((Block b) -> getUnspentTxFromBlock(b))
-				.flatMap(List::stream)
+		return blockChainLedger.stream().map((Block b) -> getUnspentTxFromBlock(b)).flatMap(List::stream)
 				.collect(Collectors.toList());
 	}
 
 	private List<UnspentTxOut> getAllUnspentTxFromTransactionPool() {
-		return transactionPool.stream()
-				.map((Transaction tx) -> getUnspentTxFromTransaction(tx))
-				.flatMap(List::stream)
+		return transactionPool.stream().map((Transaction tx) -> getUnspentTxFromTransaction(tx)).flatMap(List::stream)
 				.collect(Collectors.toList());
 	}
 
 	private BigDecimal calculateBalanceFromLedger(String accountId) {
-		List<UnspentTxOut> uTxOs = getAllUnspentTxFromLedger()
-				.stream()
-				.filter(u -> u.getAddress()
-						.equals(accountId))
+		List<UnspentTxOut> uTxOs = getAllUnspentTxFromLedger().stream().filter(u -> u.getAddress().equals(accountId))
 				.collect(Collectors.toList());
 		List<TxIn> txIns = getAllTxInsFromLedger();
 		txIns.addAll(getAllTxInsFromTransactionPoool());
 		List<UnspentTxOut> spentTxOuts = new ArrayList<>();
 		for (TxIn txIn : txIns) {
-			Optional<UnspentTxOut> o = uTxOs
-					.stream()
+			Optional<UnspentTxOut> o = uTxOs.stream()
 					.filter(u -> txIn.getTxOutId() == u.getTxOutId() && txIn.getTxOutIndex() == u.getTxOutIndex())
 					.findFirst();
 			if (o.isPresent()) {
@@ -160,20 +124,19 @@ public class Ledger1 {
 			}
 		}
 		uTxOs.removeAll(spentTxOuts);
-		Optional<BigDecimal> balance = uTxOs
-				.stream()
-				.map(u -> u.getAmount())
-				.reduce((bd1, bd2) -> bd1.add(bd2));
-		return (balance.isPresent()?balance.get():new BigDecimal(0));
+		Optional<BigDecimal> balance = uTxOs.stream().map(u -> u.getAmount()).reduce((bd1, bd2) -> bd1.add(bd2));
+		return (balance.isPresent() ? balance.get() : new BigDecimal(0));
 	}
 
 	private BigDecimal calculateBalance(Queue<UnspentTxOut> queue) {
-		Optional<BigDecimal> o = queue.stream()
-				.map(UnspentTxOut::getAmount)
-				.reduce(BigDecimal::add);
+		Optional<BigDecimal> o = queue.stream().map(UnspentTxOut::getAmount).reduce(BigDecimal::add);
 		return (o.isPresent() ? o.get() : new BigDecimal(0));
 	}
 
+	private void createNewUnspentTxInMap(String id) {
+		unspentTxOutsMap.putIfAbsent(id, new LinkedList<UnspentTxOut>());
+	}
+	
 	public Transaction createTransaction(String id, BigDecimal amount) {
 		Transaction t = null;
 		try {
@@ -189,17 +152,16 @@ public class Ledger1 {
 			t = Transaction.valueOf(txIns, txOuts);
 			if (t != null) {
 				for (UnspentTxOut uTxO : getUnspentTxFromTransaction(t)) {
-					unspentTxOutsMap.putIfAbsent(id, new LinkedList<UnspentTxOut>());
+					createNewUnspentTxInMap(id);
 					unspentTxOutsMap.get(uTxO.getAddress()).add(uTxO);
 					BigDecimal balance = calculateBalance(unspentTxOutsMap.get(uTxO.getAddress()));
 					balances.put(uTxO.getAddress(), balance);
 					updateMoneyInSystem(balance);
 				}
 				if (addTransactionToPool(t)) {
-					BroadcastService.getInstance().broadcastTransaction(t);
+					broadcastService.broadcastTransaction(t);
 				}
 
-				
 			}
 
 			if (getMoneyInSystem().compareTo(originalMoneyInSystem.add(amount)) != 0) {
@@ -221,35 +183,83 @@ public class Ledger1 {
 		return moneyInSystem;
 	}
 
-	public void createNewBlockInChain() {
+	private void blockRemoveSpentTxsFromUnspentTxOuts(Block b) {
+		b.getTransactions().forEach(t->txRemoveSpentTxsFromUnspentTxOuts(t));
+	}
+	
+	private void txRemoveSpentTxsFromUnspentTxOuts(Transaction t) {
+		List<UnspentTxOut> newUTxOuts = getUnspentTxFromTransaction(t);
+		for ( UnspentTxOut nUTxOut : newUTxOuts ) {
+			Queue<UnspentTxOut> existingUTxOuts = unspentTxOutsMap.get(nUTxOut.getAddress());
+			for ( UnspentTxOut eUTxOuts : existingUTxOuts ) {
+				if (eUTxOuts.equals(nUTxOut) ) {
+					existingUTxOuts.remove(eUTxOuts);
+				}
+			}
+		}
+	}
+	
+	public void addNewBlockToChain(Block b) {
+		try {
+			w.lock();
+			blockChainLedger.add(b);
+			transactionPool.removeAll(b.getTransactions());
+			blockRemoveSpentTxsFromUnspentTxOuts(b);
+			String filename = "/tmp/" + b.getHash() + ".txt";
+			Path path = Paths.get(filename);
+			try {
+				Files.write(path, JSON.toJson(b).getBytes(), StandardOpenOption.CREATE);
+			} catch (IOException e) {
+				log.error(e.getMessage());
+			}
+		} finally {
+			w.unlock();
+		}
+	}
+	public Block createNewBlockInChain() {
 		try {
 			w.lock();
 			if (transactionPool.size() >= MAX_TRANSACTION_SIZE) {
 				Block currentLast = blockChainLedger.get(blockChainLedger.size() - 1);
-				List<Transaction> transList = transactionPool
-						.stream()
-						.collect(Collectors.toList());
+				List<Transaction> transList = transactionPool.stream().collect(Collectors.toList());
 				Block b = new Block(currentLast.getHash(), currentLast.getIndex(), transList);
 				blockChainLedger.add(b);
-				transactionPool.removeAll(transList);
-				String filename = "/tmp/"+ b.getHash()+".txt";
-				Path path = Paths.get(filename);
-				try {
-					Files.write(path, JSON.toJson(b).getBytes(), StandardOpenOption.CREATE);
-				} catch (IOException e) {
-					log.error(e.getMessage());
-				}
+				return b;
 			}
-		}
-		finally {
+		} finally {
 			w.unlock();
 		}
+		return null;
+	}
+
+	private boolean isUTxoInUnspentTransactions(Queue<UnspentTxOut> unspentTxOuts, UnspentTxOut uTxO) {
+		return unspentTxOuts.stream()
+				.anyMatch(u -> u.getTxOutId() == uTxO.getTxOutId() && u.getTxOutIndex() == uTxO.getTxOutIndex());
+
 	}
 	
+	private void calculateAllBalances() {
+		unspentTxOutsMap
+		.entrySet()
+		.forEach(e->{
+			balances.put(e.getKey(),calculateBalance(unspentTxOutsMap.get(e.getKey())));
+		});
+
+	}
+
 	public boolean addTransactionToPool(Transaction tx) {
 		try {
 			w.lock();
-			return transactionPool.add(tx); 
+			if (tx != null) {
+				for (UnspentTxOut uTxO : getUnspentTxFromTransaction(tx)) {
+					createNewUnspentTxInMap(uTxO.getAddress());
+					if (!isUTxoInUnspentTransactions(unspentTxOutsMap.get(uTxO.getAddress()), uTxO)) {
+						unspentTxOutsMap.get(uTxO.getAddress()).add(uTxO);
+					}
+				}
+			}
+			calculateAllBalances();
+			return transactionPool.add(tx);
 		} finally {
 			w.unlock();
 		}
@@ -259,7 +269,7 @@ public class Ledger1 {
 	private BigDecimal calculateBalanceFromLedgerAndTp(String accountId) {
 		return calculateBalanceFromLedger(accountId).add(calculateBalanceFromTransactionPool(accountId));
 	}
-	
+
 	private boolean audit(String from, String to) {
 		BigDecimal fromLedgerBalance = calculateBalanceFromLedgerAndTp(from);
 		BigDecimal toLedgerBalance = calculateBalanceFromLedgerAndTp(to);
@@ -277,16 +287,17 @@ public class Ledger1 {
 		if (toBalanceFromUTxOs.compareTo(toBalanceFromBalances) != 0) {
 			return false;
 		}
-		if (fromLedgerBalance.compareTo(fromBalanceFromBalances)!=0) {
+		if (fromLedgerBalance.compareTo(fromBalanceFromBalances) != 0) {
 			return false;
 		}
-		if (toLedgerBalance.compareTo(toBalanceFromBalances)!=0) {
+		if (toLedgerBalance.compareTo(toBalanceFromBalances) != 0) {
 			return false;
 		}
 		return true;
 	}
 
-	private void preChecks(String from, String to, BigDecimal amount) throws AccountNotExistException, InsufficientFundsException {
+	private void preChecks(String from, String to, BigDecimal amount)
+			throws AccountNotExistException, InsufficientFundsException {
 		if (!accountExists(from)) {
 			throw new AccountNotExistException(from);
 		}
@@ -305,7 +316,7 @@ public class Ledger1 {
 			throw new IllegalArgumentException();
 		}
 	}
-	
+
 	public Transaction createTransaction(String from, String to, BigDecimal amount)
 			throws InsufficientFundsException, AccountNotExistException {
 		Transaction tx = null;
@@ -330,7 +341,7 @@ public class Ledger1 {
 					spentTxOuts.add(txIn);
 				}
 			}
-			
+
 			int index = 0;
 			List<TxOut> txOuts = new ArrayList<>();
 			if (total.compareTo(amount) > 0) {
@@ -341,17 +352,8 @@ public class Ledger1 {
 			TxOut txOut = new TxOut(to, amount, index++);
 			txOuts.add(txOut);
 			tx = Transaction.valueOf(spentTxOuts, txOuts);
-			if (tx != null) {
-				for (UnspentTxOut uTxO : getUnspentTxFromTransaction(tx)) {
-					unspentTxOutsMap.get(uTxO.getAddress()).add(uTxO);
-				}
-				BigDecimal newFromBalance = calculateBalance(unspentTxOutsMap.get(from));
-				balances.put(from, newFromBalance);
-				BigDecimal newToBalance = calculateBalance(unspentTxOutsMap.get(to));
-				balances.put(to, newToBalance);
-			}
 			if (addTransactionToPool(tx)) {
-				BroadcastService.getInstance().broadcastTransaction(tx);
+				broadcastService.broadcastTransaction(tx);
 			}
 			postChecks(originalMoneyInSystem);
 		} finally {
@@ -375,24 +377,21 @@ public class Ledger1 {
 		BigDecimal balancesBalance = balances.get(accountId);
 		BigDecimal ledgerBalance = calculateBalanceFromLedger(accountId);
 		BigDecimal transactionPoolBalance = calculateBalanceFromTransactionPool(accountId);
-		
-		if (balancesBalance.compareTo(ledgerBalance.add(transactionPoolBalance))!=0) {
+
+		if (balancesBalance.compareTo(ledgerBalance.add(transactionPoolBalance)) != 0) {
 			log.error("ledger balance does not equal balances balance " + balancesBalance + " " + ledgerBalance);
 		}
 		return balancesBalance;
 	}
 
 	private BigDecimal calculateBalanceFromTransactionPool(String accountId) {
-		List<UnspentTxOut> uTxOs = getAllUnspentTxFromTransactionPool()
-				.stream()
-				.filter(u -> u.getAddress().equals(accountId))
-				.collect(Collectors.toList());
+		List<UnspentTxOut> uTxOs = getAllUnspentTxFromTransactionPool().stream()
+				.filter(u -> u.getAddress().equals(accountId)).collect(Collectors.toList());
 		List<TxIn> txIns = getAllTxInsFromLedger();
 		txIns.addAll(getAllTxInsFromTransactionPoool());
 		List<UnspentTxOut> spentTxOuts = new ArrayList<>();
 		for (TxIn txIn : txIns) {
-			Optional<UnspentTxOut> o = uTxOs
-					.stream()
+			Optional<UnspentTxOut> o = uTxOs.stream()
 					.filter(u -> txIn.getTxOutId() == u.getTxOutId() && txIn.getTxOutIndex() == u.getTxOutIndex())
 					.findFirst();
 			if (o.isPresent()) {
@@ -400,11 +399,8 @@ public class Ledger1 {
 			}
 		}
 		uTxOs.removeAll(spentTxOuts);
-		Optional<BigDecimal> balance = uTxOs
-				.stream()
-				.map(u -> u.getAmount())
-				.reduce((bd1, bd2) -> bd1.add(bd2));
-		return (balance.isPresent()?balance.get():new BigDecimal(0));
+		Optional<BigDecimal> balance = uTxOs.stream().map(u -> u.getAmount()).reduce((bd1, bd2) -> bd1.add(bd2));
+		return (balance.isPresent() ? balance.get() : new BigDecimal(0));
 	}
 
 	public String getBlockChainLedger() {
@@ -417,6 +413,7 @@ public class Ledger1 {
 				+ ", unspentTxOutsMap=" + unspentTxOutsMap + ", balances=" + balances + ", moneyInSystem="
 				+ moneyInSystem + "]";
 	}
+
 	public Queue<Transaction> getTransactionPool() {
 		return transactionPool;
 	}

@@ -8,10 +8,10 @@ import spark.Request;
 import spark.Response;
 import spark.Route;
 
-public class TransactionService implements Route {
+public class TransactionManager implements Route {
 	
 	private Ledger1 ledger;
-	public TransactionService(Ledger1 ledger) {
+	public TransactionManager(Ledger1 ledger) {
 		this.ledger = ledger;
 	}
 

@@ -14,13 +14,13 @@ import spark.Request;
 import spark.Response;
 import spark.Route;
 
-public class Create implements Route {
+public class CreateAccountManager implements Route {
 
-	private static Logger log = LogManager.getLogger(Create.class);
+	private static Logger log = LogManager.getLogger(CreateAccountManager.class);
 	private DummyStore db;
 	private Ledger1 ledger;
 	
-	public Create(DummyStore db, Ledger1 ledger) {
+	public CreateAccountManager(DummyStore db, Ledger1 ledger) {
 		this.db = db;
 		this.ledger = ledger;
 	}

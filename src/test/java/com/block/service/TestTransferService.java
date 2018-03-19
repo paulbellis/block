@@ -32,7 +32,13 @@ public class TestTransferService {
 
 	@Test
 	public void test() throws ClientProtocolException, IOException, InterruptedException {
-		Server.start(4567);
+		Server server1 = new Server("http://localhost",4567);
+		server1.init("config2.txt");
+		server1.start();
+//		Server server2 = new Server("http://localhost",4568);
+//		server2.start();
+//		Server server3 = new Server("http://localhost",4569);
+//		server3.start();
 
 		try {
 			Thread.sleep(3000);
@@ -51,7 +57,9 @@ public class TestTransferService {
 		catch (IOException e) {
 		}
 
-		Server.stopServer();
+		server1.stopServer();
+//		server2.stopServer();
+//		server3.stopServer();
 	}
 
 }
