@@ -8,7 +8,7 @@ public final class TxOut {
 	private BigDecimal amount;
 	private int index;
 
-	public TxOut(String address, BigDecimal amount, int index) {
+	private TxOut(String address, BigDecimal amount, int index) {
 		super();
 		this.address = address;
 		this.amount = amount;
@@ -30,5 +30,9 @@ public final class TxOut {
 	@Override
 	public String toString() {
 		return "[ " + address + "," + amount + "," + index + "]";
+	}
+	
+	public static TxOut valueOf(String address, BigDecimal amount, int index) {
+		return new TxOut(address, amount, index);
 	}
 }

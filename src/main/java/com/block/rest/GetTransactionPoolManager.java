@@ -1,5 +1,4 @@
-package com.block.service;
-
+package com.block.rest;
 
 import com.block.commons.JSON;
 import com.block.model.Ledger1;
@@ -8,17 +7,18 @@ import spark.Request;
 import spark.Response;
 import spark.Route;
 
-public class GetBlockchainManager implements Route {
+public class GetTransactionPoolManager implements Route {
 
 	private Ledger1 ledger;
 
-	public GetBlockchainManager(Ledger1 ledger) {
+	public GetTransactionPoolManager(Ledger1 ledger) {
+		super();
 		this.ledger = ledger;
 	}
-
+	
 	@Override
 	public Object handle(Request request, Response response) throws Exception {
-		return ledger.getBlockChainLedger();
+		return JSON.toJson(ledger.getTransactionPool());
 	}
 
 }

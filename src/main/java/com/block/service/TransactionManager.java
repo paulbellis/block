@@ -19,7 +19,7 @@ public class TransactionManager implements Route {
 	public Object handle(Request request, Response response) throws Exception {
 		try {
 			Transaction tx  = (Transaction) JSON.fromJson(request.body(), Transaction.class);
-			ledger.addTransactionToPool(tx);
+			ledger.processIncomingTransaction(tx);
 		}
 		catch (Exception e) {
 			

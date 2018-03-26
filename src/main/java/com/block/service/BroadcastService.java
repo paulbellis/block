@@ -1,6 +1,8 @@
 package com.block.service;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -8,6 +10,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 import com.block.commons.JSON;
 import com.block.model.Block;
+import com.block.model.Ledger1;
 import com.block.model.Transaction;
 import com.google.gson.reflect.TypeToken;
 
@@ -37,26 +40,27 @@ public class BroadcastService {
 	public void broadcastBlock(Block b) {
 		for (String address : nodeList) {
 			try {
-				HttpService.doPost(address+"/block", JSON.toJson(b));
+				String url = address+"/block?server=";
+				HttpService.doPost(url + URLEncoder.encode(THIS_SERVER,StandardCharsets.UTF_8.toString()), JSON.toJson(b));
 			} catch (IOException e) {
 			}
 		}
 	}
 	
 	public void addAddress(String address) {
-		synchronized(nodeList) {
-			nodeList.add(address);
+		if (!address.equals(THIS_SERVER)) {
+			synchronized(nodeList) {
+				if (!nodeList.contains(address)) {
+					nodeList.add(address);
+				}
+			}
 		}
 	}
 
 	public void addAddresses(List<String> nodes) {
-		for (String address : nodes) {
-			if (!address.equals(THIS_SERVER)) {
-				synchronized(nodeList) {
-					if (!nodeList.contains(address)) {
-						nodeList.add(address);
-					}
-				}
+		if (nodes != null) {
+			for (String address : nodes) {
+				addAddress(address);
 			}
 		}
 	}
@@ -83,6 +87,27 @@ public class BroadcastService {
 			} catch (IOException e) {
 			}
 		}
+	}
+
+	
+	public List<Block> getLastBlock() {
+		if (!nodeList.isEmpty()) {
+			int highestIndex = 0;
+			String bestAddress = null;
+			for (String address : nodeList) {
+				Block b = (Block) JSON.fromJson(HttpService.get(address+"/block/" + Ledger1.GET_LAST_BLOCK),Block.class);
+				if ( b.getIndex() > highestIndex) {
+					highestIndex = b.getIndex();
+					bestAddress = address;
+				}
+			}
+			if (bestAddress != null) {
+				String ledger = HttpService.get(bestAddress +"/ledger");
+				List<Block> newBlockchain = JSON.fromJsonToList(ledger, new TypeToken<List<Block>>(){}.getType());
+				return newBlockchain;
+			}
+		}
+		return new ArrayList<>();
 	}
 
 }

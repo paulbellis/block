@@ -10,9 +10,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
+import com.block.manager.GetBlockManager;
+import com.block.manager.GetUnspentTransactionsManager;
 import com.block.manager.MiningManager;
 import com.block.manager.PostBlockManager;
+import com.block.model.Block;
 import com.block.model.Ledger1;
 import com.block.service.BalanceService;
 import com.block.service.BroadcastService;
@@ -32,13 +36,16 @@ public class Server {
 	private final int port;
 	private BroadcastService broadcastService;
 	private Ledger1 ledger;
-	private TransferService transferService = new TransferService(db, ledger);
+	private TransferService transferService;
+	private String nodeAddress;
 
 	public Server(String url, int port) {
 		this.url = url;
 		this.port = port;
 		broadcastService = new BroadcastService(url,port);
 		ledger = new Ledger1(null,broadcastService);
+		transferService = new TransferService(db, ledger);
+		this.nodeAddress = "1234";
 	}
 
 	public void start() {
@@ -51,13 +58,25 @@ public class Server {
 		post("/transaction",new TransactionManager(ledger));
 		post("/servers", new PostServersManager(broadcastService));
 		get("/servers", new GetServersManager(broadcastService));
-		get("/mine", new MiningManager(ledger, broadcastService));
+		get("/mine", new MiningManager(ledger, db, broadcastService, nodeAddress));
 		post("/block", new PostBlockManager(ledger));
-		broadcastService.getNetworkNodes();
-		broadcastService.broadCastMe();
-
+		get("/block/:hash", new GetBlockManager(ledger));
+		get("/block", new GetBlockManager(ledger));
+		get("/pool", new GetTransactionPoolManager(ledger));
+		get("/unspent", new GetUnspentTransactionsManager(ledger));
+		startup();
 	}
 
+	private void startup() {
+		broadcastService.getNetworkNodes();
+		broadcastService.broadCastMe();
+		Block myLast = ledger.getCurrentLastBlock();
+		List<Block> bestBlockChain = broadcastService.getLastBlock();
+		if (bestBlockChain != null && !bestBlockChain.isEmpty()) {
+			ledger.processNewBlockChain(bestBlockChain);
+		}
+	}
+	
 	public void stopServer() {
 		stop();
 	}

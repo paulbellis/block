@@ -37,4 +37,7 @@ public class AccountBalance {
 	}
 
 
+	public static AccountBalance createEmptyBalance(String accountId) {
+		return new AccountBalance(accountId, 0, 0, 0);
+	}
 }

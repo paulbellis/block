@@ -1,11 +1,14 @@
 package com.block.model;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.block.commons.Hasher;
 
 
 public class Transaction {
+	public static final int COINBASE_AMOUNT = 50;
 	private String id;
 	private List<TxIn> txIns;
 	private List<TxOut> txOuts;
@@ -58,6 +61,13 @@ public class Transaction {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public static Transaction createCoinBase(String address) {
+		TxOut coinBase = TxOut.valueOf(address, new BigDecimal(COINBASE_AMOUNT), 0);
+		List<TxOut> txOuts = new ArrayList<>();
+		txOuts.add(coinBase);
+		return Transaction.valueOf(new ArrayList<>(), txOuts);
 	}
 
 }

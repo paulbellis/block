@@ -43,6 +43,18 @@ public class DummyStore {
 		}
 	}
 
+	public AccountBalance update(String key, int amount) {
+		AccountBalance newAB = null;
+		boolean success = false;
+		while (!success ) {
+			m.putIfAbsent(key, AccountBalance.createEmptyBalance(key));
+			AccountBalance oldAB = m.get(key);
+			newAB = new AccountBalance(key, oldAB.getBalance()+amount, oldAB.getIns()+amount, oldAB.getOuts());
+			success = m.replace(key, oldAB, newAB);
+		}
+		return newAB;
+	}
+
 	public void transfer(String from, String to, int amount, String hash) throws InsufficientFundsException, AccountNotExistException {
 		if (m.get(from)==null || m.get(to)==null) {
 			throw new AccountNotExistException("either " + from + " or " + to);

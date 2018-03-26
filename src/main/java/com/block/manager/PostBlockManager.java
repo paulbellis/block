@@ -1,5 +1,8 @@
 package com.block.manager;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+
 import com.block.commons.JSON;
 import com.block.model.Block;
 import com.block.model.Ledger1;
@@ -21,13 +24,14 @@ public class PostBlockManager implements Route {
 	@Override
 	public Object handle(Request request, Response response) throws Exception {
 		try {
+			String originatingServer = URLDecoder.decode(request.queryParams("server"),StandardCharsets.UTF_8.toString());
 			Block b = (Block) JSON.fromJson(request.body(), Block.class);
-			BlockService.processNewBlock(b, ledger);
+			BlockService.processNewBlock(b, ledger, originatingServer);
 		} catch (Exception e) {
 
 		}
 
-		return null;
+		return "SUCCESS";
 	}
 
 }

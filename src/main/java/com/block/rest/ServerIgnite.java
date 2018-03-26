@@ -14,7 +14,6 @@ import java.util.List;
 import static spark.Spark.port;
 
 import com.block.commons.JSON;
-import com.block.model.Block;
 import com.block.model.Ledger1;
 import com.block.service.BalanceService;
 import com.block.service.BroadcastService;
@@ -22,7 +21,6 @@ import com.block.service.CreateAccountManager;
 import com.block.service.DummyStore;
 import com.block.service.Dump;
 import com.block.service.GetBlockchainManager;
-import com.block.service.Ledger;
 import com.block.service.TransactionManager;
 import com.block.service.TransferService;
 import com.google.gson.reflect.TypeToken;

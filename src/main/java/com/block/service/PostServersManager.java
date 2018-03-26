@@ -20,7 +20,8 @@ public class PostServersManager implements Route {
 
 	@Override
 	public Object handle(Request request, Response response) throws Exception {
-		List<String> addresses = JSON.fromJsonToList(request.body(),new TypeToken<List<String>>(){}.getType()); 
+		String body = request.body();
+		List<String> addresses = JSON.fromJsonToList(body , new TypeToken<List<String>>(){}.getType()); 
 		if (!addresses.isEmpty()) {
 			broadcastService.addAddresses(addresses);
 		}
