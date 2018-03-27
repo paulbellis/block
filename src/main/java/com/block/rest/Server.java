@@ -10,24 +10,24 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 
+import com.block.commons.RemoteNodeBCandTP;
+import com.block.manager.CreateAccountManager;
 import com.block.manager.GetBlockManager;
+import com.block.manager.GetBlockchainManager;
+import com.block.manager.GetServersManager;
+import com.block.manager.GetTransactionPoolManager;
 import com.block.manager.GetUnspentTransactionsManager;
 import com.block.manager.MiningManager;
 import com.block.manager.PostBlockManager;
-import com.block.model.Block;
-import com.block.model.Ledger1;
+import com.block.manager.PostServersManager;
+import com.block.manager.TransactionManager;
+import com.block.model.DummyStore;
 import com.block.service.BalanceService;
 import com.block.service.BroadcastService;
-import com.block.service.CreateAccountManager;
-import com.block.service.DummyStore;
 import com.block.service.Dump;
-import com.block.service.GetBlockchainManager;
-import com.block.service.GetServersManager;
-import com.block.service.PostServersManager;
-import com.block.service.TransactionManager;
-import com.block.service.TransferService;
+import com.block.service.LedgerService;
+import com.block.service.Ledgers;
 
 public class Server {
 
@@ -35,16 +35,14 @@ public class Server {
 	private final String url;
 	private final int port;
 	private BroadcastService broadcastService;
-	private Ledger1 ledger;
-	private TransferService transferService;
+	private Ledgers ledger;
 	private String nodeAddress;
 
 	public Server(String url, int port) {
 		this.url = url;
 		this.port = port;
 		broadcastService = new BroadcastService(url,port);
-		ledger = new Ledger1(null,broadcastService);
-		transferService = new TransferService(db, ledger);
+		ledger = new LedgerService(null,broadcastService);
 		this.nodeAddress = "1234";
 	}
 
@@ -54,7 +52,7 @@ public class Server {
 		get("/balance/:id", new BalanceService(ledger));
 		get("/dump", new Dump(db));
 		post("/create", new CreateAccountManager(db,ledger));
-		put("/transfer", new TransferManager(transferService));
+		put("/transfer", new TransferManager(ledger));
 		post("/transaction",new TransactionManager(ledger));
 		post("/servers", new PostServersManager(broadcastService));
 		get("/servers", new GetServersManager(broadcastService));
@@ -70,10 +68,12 @@ public class Server {
 	private void startup() {
 		broadcastService.getNetworkNodes();
 		broadcastService.broadCastMe();
-		Block myLast = ledger.getCurrentLastBlock();
-		List<Block> bestBlockChain = broadcastService.getLastBlock();
-		if (bestBlockChain != null && !bestBlockChain.isEmpty()) {
-			ledger.processNewBlockChain(bestBlockChain);
+		RemoteNodeBCandTP r = broadcastService.getBestBlockchain();
+		if (r != null && r.getBlockChain() != null && !r.getBlockChain().isEmpty()) {
+			ledger.processNewBlockChain(r.getBlockChain());
+		}
+		if (r != null && r.getTransactionPool() != null && !r.getTransactionPool().isEmpty()) {
+			ledger.processNewTransactionPool(r.getTransactionPool());
 		}
 	}
 	

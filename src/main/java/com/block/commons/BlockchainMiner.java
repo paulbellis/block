@@ -1,12 +1,10 @@
 package com.block.commons;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
 import com.block.model.Block;
 import com.block.model.Transaction;
-import com.google.common.hash.Hashing;
 
 public class BlockchainMiner implements Miners {
 

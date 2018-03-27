@@ -9,8 +9,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import com.block.commons.JSON;
+import com.block.commons.RemoteNodeBCandTP;
 import com.block.model.Block;
-import com.block.model.Ledger1;
 import com.block.model.Transaction;
 import com.google.gson.reflect.TypeToken;
 
@@ -90,7 +90,7 @@ public class BroadcastService {
 	}
 
 	
-	public List<Block> getLastBlock() {
+	public RemoteNodeBCandTP getBestBlockchain() {
 		if (!nodeList.isEmpty()) {
 			int highestIndex = 0;
 			String bestAddress = null;
@@ -103,11 +103,13 @@ public class BroadcastService {
 			}
 			if (bestAddress != null) {
 				String ledger = HttpService.get(bestAddress +"/ledger");
-				List<Block> newBlockchain = JSON.fromJsonToList(ledger, new TypeToken<List<Block>>(){}.getType());
-				return newBlockchain;
+				List<Block> blockchain = JSON.fromJsonToList(ledger, new TypeToken<List<Block>>(){}.getType());
+				String tp = HttpService.get(bestAddress +"/pool");
+				List<Transaction> transactionPool = JSON.fromJsonToList(tp, new TypeToken<List<Transaction>>(){}.getType());
+				return RemoteNodeBCandTP.valueOf(blockchain, transactionPool);
 			}
 		}
-		return new ArrayList<>();
+		return null;
 	}
 
 }

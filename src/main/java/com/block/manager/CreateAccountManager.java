@@ -1,4 +1,4 @@
-package com.block.service;
+package com.block.manager;
 
 import java.math.BigDecimal;
 
@@ -7,8 +7,8 @@ import org.apache.log4j.Logger;
 
 import com.block.commons.JSON;
 import com.block.model.AccountBalance;
-import com.block.model.AccountTransfer;
-import com.block.model.Ledger1;
+import com.block.model.DummyStore;
+import com.block.service.Ledgers;
 
 import spark.Request;
 import spark.Response;
@@ -18,11 +18,11 @@ public class CreateAccountManager implements Route {
 
 	private static Logger log = LogManager.getLogger(CreateAccountManager.class);
 	private DummyStore db;
-	private Ledger1 ledger;
+	private Ledgers ledger;
 	
-	public CreateAccountManager(DummyStore db, Ledger1 ledger) {
+	public CreateAccountManager(DummyStore db, Ledgers ledger2) {
 		this.db = db;
-		this.ledger = ledger;
+		this.ledger = ledger2;
 	}
 
 

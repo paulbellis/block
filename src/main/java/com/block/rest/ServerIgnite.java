@@ -1,8 +1,9 @@
 package com.block.rest;
 
 import static spark.Spark.get;
-import static spark.Spark.put;
+import static spark.Spark.port;
 import static spark.Spark.post;
+import static spark.Spark.put;
 import static spark.Spark.stop;
 
 import java.io.IOException;
@@ -11,21 +12,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static spark.Spark.port;
-
 import com.block.commons.JSON;
-import com.block.model.Ledger1;
+import com.block.manager.CreateAccountManager;
+import com.block.manager.GetBlockchainManager;
+import com.block.manager.TransactionManager;
+import com.block.model.DummyStore;
 import com.block.service.BalanceService;
 import com.block.service.BroadcastService;
-import com.block.service.CreateAccountManager;
-import com.block.service.DummyStore;
 import com.block.service.Dump;
-import com.block.service.GetBlockchainManager;
-import com.block.service.TransactionManager;
+import com.block.service.Ledger1;
 import com.block.service.TransferService;
 import com.google.gson.reflect.TypeToken;
-
-import spark.Route;
 
 public class ServerIgnite {
 

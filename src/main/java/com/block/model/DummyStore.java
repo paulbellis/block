@@ -1,4 +1,4 @@
-package com.block.service;
+package com.block.model;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -8,7 +8,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.block.commons.AccountNotExistException;
 import com.block.commons.InsufficientFundsException;
 import com.block.commons.JSON;
-import com.block.model.AccountBalance;
 
 public class DummyStore {
 	private final Map<String, AccountBalance> m = new TreeMap<String, AccountBalance>();

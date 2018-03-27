@@ -1,4 +1,4 @@
-package com.block.model;
+package com.block.service;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -28,9 +28,13 @@ import com.block.commons.InsufficientFundsException;
 import com.block.commons.JSON;
 import com.block.commons.Miners;
 import com.block.commons.TxInException;
-import com.block.service.BroadcastService;
+import com.block.model.Block;
+import com.block.model.Transaction;
+import com.block.model.TxIn;
+import com.block.model.TxOut;
+import com.block.model.UnspentTxOut;
 
-public class Ledger1 {
+public class Ledger1 implements Ledgers {
 	private static Logger log = LogManager.getLogger(Ledger1.class);
 	private static final int MAX_TRANSACTION_SIZE = 1000;
 	public static final Object GET_LAST_BLOCK = "last";
@@ -236,6 +240,7 @@ public class Ledger1 {
 		return true;
 	}
 
+	@Override
 	public boolean processIncomingTransaction(Transaction t) {
 		try {
 			w.lock();
@@ -252,6 +257,7 @@ public class Ledger1 {
 		}
 		
 	}
+	@Override
 	public Transaction createTransaction(String id, BigDecimal amount) {
 		Transaction t = null;
 		try {
@@ -301,6 +307,7 @@ public class Ledger1 {
 		moneyInSystem = moneyInSystem.add(amount);
 	}
 
+	@Override
 	public BigDecimal getMoneyInSystem() {
 		return moneyInSystem;
 	}
@@ -413,6 +420,7 @@ public class Ledger1 {
 					});
 	}
 
+	@Override
 	public void addNewBlockToChain(Block b) {
 		try {
 			w.lock();
@@ -435,6 +443,7 @@ public class Ledger1 {
 		return (transactionPool.stream().filter(t -> t.getId().equals(tx.getId())).findFirst().isPresent());
 	}
 
+	@Override
 	public void addIncomingBlockToChain(Block incomingBlock, String originatingIP) {
 		try {
 			w.lock();
@@ -456,6 +465,7 @@ public class Ledger1 {
 		}
 	}
 
+	@Override
 	public Block getCurrentLastBlock() {
 		try {
 			r.lock();
@@ -468,6 +478,7 @@ public class Ledger1 {
 		}
 	}
 
+	@Override
 	public Block mineBlock(String address) {
 		try {
 			w.lock();
@@ -514,6 +525,7 @@ public class Ledger1 {
 		}
 	}
 	
+	@Override
 	public boolean addTransactionToPool(Transaction tx) {
 		try {
 			w.lock();
@@ -579,6 +591,7 @@ public class Ledger1 {
 		}
 	}
 
+	@Override
 	public Transaction createTransaction(String from, String to, BigDecimal amount)
 			throws InsufficientFundsException, AccountNotExistException {
 		Transaction tx = null;
@@ -649,6 +662,7 @@ public class Ledger1 {
 		return (unspentTxOutsMap.get(id) != null && balances.get(id) != null);
 	}
 
+	@Override
 	public synchronized BigDecimal getBalance(String accountId) throws AccountNotExistException {
 		BigDecimal balancesBalance = balances.get(accountId);
 		BigDecimal ledgerBalance = calculateBalanceFromLedger(accountId);
@@ -683,6 +697,7 @@ public class Ledger1 {
 		return (balance.isPresent() ? balance.get() : new BigDecimal(0));
 	}
 
+	@Override
 	public String getBlockChainLedger() {
 		return JSON.toJson(blockChainLedger);
 	}
@@ -694,10 +709,12 @@ public class Ledger1 {
 				+ moneyInSystem + "]";
 	}
 
+	@Override
 	public Queue<Transaction> getTransactionPool() {
 		return transactionPool;
 	}
 
+	@Override
 	public Block getBlock(String hash) {
 		try {
 			r.lock();
@@ -719,6 +736,7 @@ public class Ledger1 {
 		}
 	}
 
+	@Override
 	public Block getBlock(Integer index) {
 		try {
 			r.lock();
@@ -742,6 +760,7 @@ public class Ledger1 {
 		this.hashOfLastProcessedBlock = hashOfLastProcessedBlock;
 	}
 
+	@Override
 	public void processNewBlockChain(List<Block> bestBlockChain) {
 		List<Block> orderedList = bestBlockChain.stream()
 				.sorted((Block b1, Block b2) -> b1.getIndex() - b2.getIndex())
@@ -758,8 +777,15 @@ public class Ledger1 {
 		sub.forEach(b -> addIncomingBlockToChain(b, ""));
 	}
 
+	@Override
 	public Map<String, Queue<UnspentTxOut>> getUnspentTxOutsMap() {
 		return unspentTxOutsMap;
+	}
+
+	@Override
+	public void processNewTransactionPool(List<Transaction> transactionPool) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

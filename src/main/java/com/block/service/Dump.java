@@ -1,5 +1,7 @@
 package com.block.service;
 
+import com.block.model.DummyStore;
+
 import spark.Request;
 import spark.Response;
 import spark.Route;

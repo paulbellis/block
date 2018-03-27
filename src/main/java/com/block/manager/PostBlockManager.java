@@ -5,8 +5,8 @@ import java.nio.charset.StandardCharsets;
 
 import com.block.commons.JSON;
 import com.block.model.Block;
-import com.block.model.Ledger1;
 import com.block.service.BlockService;
+import com.block.service.Ledgers;
 
 import spark.Request;
 import spark.Response;
@@ -14,11 +14,11 @@ import spark.Route;
 
 public class PostBlockManager implements Route {
 
-	private Ledger1 ledger;
+	private Ledgers ledger;
 
-	public PostBlockManager(Ledger1 ledger) {
+	public PostBlockManager(Ledgers ledger2) {
 		super();
-		this.ledger = ledger;
+		this.ledger = ledger2;
 	}
 
 	@Override

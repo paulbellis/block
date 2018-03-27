@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 
 import com.block.commons.AccountNotExistException;
 import com.block.commons.JSON;
-import com.block.model.Ledger1;
 
 import spark.Request;
 import spark.Response;
@@ -12,10 +11,10 @@ import spark.Route;
 
 public class BalanceService implements Route {
 	
-	private Ledger1 ledger;
+	private Ledgers ledger;
 
-	public BalanceService(Ledger1 ledger) {
-		this.ledger = ledger;
+	public BalanceService(Ledgers ledger2) {
+		this.ledger = ledger2;
 	}
 
 	@Override

@@ -1,9 +1,8 @@
 package com.block.manager;
 
-import com.block.commons.JSON;
-import com.block.model.Ledger1;
+import com.block.model.DummyStore;
 import com.block.service.BroadcastService;
-import com.block.service.DummyStore;
+import com.block.service.Ledgers;
 import com.block.service.MiningService;
 
 import spark.Request;
@@ -12,14 +11,14 @@ import spark.Route;
 
 public class MiningManager implements Route {
 
-	private Ledger1 ledger;
+	private Ledgers ledger;
 	private BroadcastService broadcastService;
 	private String nodeAddress;
 	private DummyStore db;
 
-	public MiningManager(Ledger1 ledger, DummyStore db, BroadcastService broadcastService, String nodeAddress) {
+	public MiningManager(Ledgers ledger2, DummyStore db, BroadcastService broadcastService, String nodeAddress) {
 		super();
-		this.ledger = ledger;
+		this.ledger = ledger2;
 		this.broadcastService = broadcastService;
 		this.nodeAddress = nodeAddress;
 		this.db = db;
@@ -27,7 +26,7 @@ public class MiningManager implements Route {
 
 	@Override
 	public Object handle(Request request, Response response) throws Exception {
-		return JSON.toJson(MiningService.mine(ledger, db, broadcastService, nodeAddress));
+		return MiningService.mine(ledger, db, broadcastService, nodeAddress);
 	}
 
 
