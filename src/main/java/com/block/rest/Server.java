@@ -25,6 +25,7 @@ import com.block.manager.TransactionManager;
 import com.block.model.DummyStore;
 import com.block.service.BalanceService;
 import com.block.service.BroadcastService;
+import com.block.service.CryptoService;
 import com.block.service.Dump;
 import com.block.service.LedgerService;
 import com.block.service.Ledgers;
@@ -36,14 +37,15 @@ public class Server {
 	private final int port;
 	private BroadcastService broadcastService;
 	private Ledgers ledger;
-	private String nodeAddress;
+//	private String nodeAddress;
 
-	public Server(String url, int port) {
+	public Server(String url, int port, String user) {
 		this.url = url;
 		this.port = port;
 		broadcastService = new BroadcastService(url,port);
-		ledger = new LedgerService(null,broadcastService);
-		this.nodeAddress = "1234";
+		CryptoService cryptoService = new CryptoService();
+		cryptoService.addNodeKey(user);
+		ledger = new LedgerService(broadcastService, cryptoService);
 	}
 
 	public void start() {
@@ -56,7 +58,7 @@ public class Server {
 		post("/transaction",new TransactionManager(ledger));
 		post("/servers", new PostServersManager(broadcastService));
 		get("/servers", new GetServersManager(broadcastService));
-		get("/mine", new MiningManager(ledger, db, broadcastService, nodeAddress));
+		get("/mine", new MiningManager(ledger, db, broadcastService));
 		post("/block", new PostBlockManager(ledger));
 		get("/block/:hash", new GetBlockManager(ledger));
 		get("/block", new GetBlockManager(ledger));
@@ -92,7 +94,7 @@ public class Server {
 	}
 
 	public static void main(String[] args) {
-		Server server = new Server(args[0],Integer.valueOf(args[1]));
+		Server server = new Server(args[0],Integer.valueOf(args[1]),args[2]);
 		server.init((args.length>2?args[2]:null));
 		server.start();
 //		Server server1 = new Server("http://localhost",4567);

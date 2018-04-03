@@ -40,6 +40,7 @@ public class LedgerService implements Ledgers {
 	private List<Block> blockChainLedger;
 	private String hashOfLastProcessedBlock = null;
 	private BroadcastService broadcastService;
+	private CryptoService key;
 
 	private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock(true);
 	private final Lock r = rwl.readLock();
@@ -47,8 +48,13 @@ public class LedgerService implements Ledgers {
 
 	private int DIFFICULTY = 0;
 
-	public LedgerService(List<Block> blockChainLedger, BroadcastService broadcastService) {
+	public LedgerService(BroadcastService broadcastService, CryptoService key) {
+		this(null, broadcastService, key);
+	}
+
+	public LedgerService(List<Block> blockChainLedger, BroadcastService broadcastService, CryptoService key) {
 		this.broadcastService = broadcastService;
+		this.key = key;
 		log.debug("CREATING LEDGER1");
 		if (blockChainLedger == null) {
 			this.blockChainLedger = new ArrayList<>();
@@ -79,6 +85,7 @@ public class LedgerService implements Ledgers {
 			r.unlock();
 		}
 	}
+
 	private void addBlockToChain(Block b) {
 		w.lock();
 		try {
@@ -87,6 +94,7 @@ public class LedgerService implements Ledgers {
 			w.unlock();
 		}
 	}
+
 	public Block getBlock(Integer index) {
 		try {
 			r.lock();
@@ -101,6 +109,7 @@ public class LedgerService implements Ledgers {
 			r.unlock();
 		}
 	}
+
 	public Block getBlock(String hash) {
 		try {
 			r.lock();
@@ -121,12 +130,10 @@ public class LedgerService implements Ledgers {
 			r.unlock();
 		}
 	}
+
 	public String getBlockChainLedger() {
 		return JSON.toJson(blockChainLedger);
 	}
-
-
-
 
 	// Transaction
 	private List<UnspentTxOut> createUTxOFromTransaction(Transaction tx) {
@@ -149,7 +156,7 @@ public class LedgerService implements Ledgers {
 			BigDecimal total = new BigDecimal(0);
 
 			if (unspentTxOuts != null) {
-				for (UnspentTxOut uTxO: unspentTxOuts) {
+				for (UnspentTxOut uTxO : unspentTxOuts) {
 					total = total.add(uTxO.getAmount());
 					unspentTxOToCoverAmount.add(uTxO);
 					TxIn txIn = new TxIn(uTxO.getTxOutId(), uTxO.getTxOutIndex(), from + "," + to + "," + amount);
@@ -182,17 +189,23 @@ public class LedgerService implements Ledgers {
 		}
 		return tx;
 	}
-	
+
 	// TransactionPool
 	private boolean transactionInTransactionPool(Transaction tx) {
-		return (transactionPool.stream().filter(t -> t.getId().equals(tx.getId())).findFirst().isPresent());
+		return (transactionPool.stream()
+				.filter(t -> t.getId()
+						.equals(tx.getId()))
+				.findFirst()
+				.isPresent());
 	}
+
 	private void removeTransactionsFromTransactionPool(List<Transaction> txs) {
 		for (Transaction tx : txs) {
 			transactionPool.removeIf((Transaction t) -> t.getId()
 					.equals(tx.getId()));
 		}
 	}
+
 	public boolean addTransactionToPool(Transaction tx) {
 		try {
 			w.lock();
@@ -202,37 +215,35 @@ public class LedgerService implements Ledgers {
 		}
 
 	}
+
 	public Queue<Transaction> getTransactionPool() {
 		return transactionPool;
 	}
+
 	@Override
 	public void processNewTransactionPool(List<Transaction> transactionPool) {
 		for (Transaction tx : transactionPool) {
 			processIncomingTransaction(tx);
 		}
-		
+
 	}
-
-
-
 
 	// UnspentTxOuts Map
 	private List<UnspentTxOut> getSpentTxOutsFromTxIns(List<TxIn> txIns) throws TxInException {
- 		List<UnspentTxOut> spent = new ArrayList<>();
- 		for (TxIn txIn : txIns) {
-			Optional<UnspentTxOut> uTxO = unspentTxOutsMap
-					.values()
+		List<UnspentTxOut> spent = new ArrayList<>();
+		for (TxIn txIn : txIns) {
+			Optional<UnspentTxOut> uTxO = unspentTxOutsMap.values()
 					.stream()
 					.flatMap(Queue::stream)
-					.filter(u -> u.getTxOutId().equals(txIn.getTxOutId()) && u.getTxOutIndex() == txIn.getTxOutIndex())
+					.filter(u -> u.getTxOutId()
+							.equals(txIn.getTxOutId()) && u.getTxOutIndex() == txIn.getTxOutIndex())
 					.findFirst();
-			
+
 			if (uTxO.isPresent()) {
 				spent.add(uTxO.get());
+			} else {
+				throw new TxInException();
 			}
-			else {
-	 			throw new TxInException();
-	 		}
 		}
 		return spent;
 	}
@@ -256,6 +267,7 @@ public class LedgerService implements Ledgers {
 	private void createNewUnspentTxInMap(String id) {
 		unspentTxOutsMap.putIfAbsent(id, new LinkedList<UnspentTxOut>());
 	}
+
 	public Map<String, Queue<UnspentTxOut>> getUnspentTxOutsMap() {
 		return unspentTxOutsMap;
 	}
@@ -272,18 +284,18 @@ public class LedgerService implements Ledgers {
 	}
 
 	// Block
-	public Block mineBlock(String address) {
+	public Block mineBlock() {
 		try {
 			w.lock();
 			Block currentLastBlock = getCurrentLastBlock();
 			List<Transaction> transList = transactionPool.stream()
 					.collect(Collectors.toList());
-			Transaction reward = Transaction.createCoinBase(address);
-			//processTransaction(reward);
+			Transaction reward = Transaction.createCoinBase(key.getNodePublicKey());
+			// processTransaction(reward);
 			transList.add(reward);
 			Miners miner = new BlockchainMiner();
 			Block b = miner.findBlock(currentLastBlock.getIndex() + 1, currentLastBlock.getHash(), Instant.now(),
-					transList, DIFFICULTY );
+					transList, DIFFICULTY);
 			if (b != null) {
 				addNewBlockToChain(b);
 				return b;
@@ -297,11 +309,14 @@ public class LedgerService implements Ledgers {
 	// utils
 	public synchronized BigDecimal getBalance(String accountId) throws AccountNotExistException {
 		BigDecimal balancesBalance = balances.get(accountId);
-//		BigDecimal ledgerBalance = calculateBalanceFromLedger(accountId);
-//		BigDecimal transactionPoolBalance = calculateBalanceFromTransactionPool(accountId);
-//		if (balancesBalance.compareTo(ledgerBalance.add(transactionPoolBalance)) != 0) {
-//			log.error("ledger balance does not equal balances balance " + balancesBalance + " " + ledgerBalance);
-//		}
+		// BigDecimal ledgerBalance = calculateBalanceFromLedger(accountId);
+		// BigDecimal transactionPoolBalance =
+		// calculateBalanceFromTransactionPool(accountId);
+		// if (balancesBalance.compareTo(ledgerBalance.add(transactionPoolBalance)) !=
+		// 0) {
+		// log.error("ledger balance does not equal balances balance " + balancesBalance
+		// + " " + ledgerBalance);
+		// }
 		return balancesBalance;
 	}
 
@@ -322,11 +337,12 @@ public class LedgerService implements Ledgers {
 		for (UnspentTxOut uTxO : uTxOs) {
 			createNewUnspentTxInMap(uTxO.getAddress());
 			if (!isUTxoInUnspentTransactions(unspentTxOutsMap.get(uTxO.getAddress()), uTxO)) {
-				unspentTxOutsMap.get(uTxO.getAddress()).add(uTxO);
+				unspentTxOutsMap.get(uTxO.getAddress())
+						.add(uTxO);
 			}
 		}
 	}
-	
+
 	private boolean processTransaction(Transaction t) {
 		if (t != null) {
 			List<UnspentTxOut> allUTxOs = createUTxOFromTransaction(t);
@@ -338,8 +354,7 @@ public class LedgerService implements Ledgers {
 				e1.printStackTrace();
 			}
 			removeSpentTxsFromUnspentTxOuts(spent);
-			Map<String, List<UnspentTxOut>> mapSpent = spent
-					.stream()
+			Map<String, List<UnspentTxOut>> mapSpent = spent.stream()
 					.collect(Collectors.groupingBy(UnspentTxOut::getAddress));
 			mapSpent.entrySet()
 					.forEach(e ->
@@ -372,41 +387,40 @@ public class LedgerService implements Ledgers {
 		return true;
 	}
 
-
 	public boolean processIncomingTransaction(Transaction t) {
 		try {
 			w.lock();
 			if (processTransaction(t)) {
 				if (addTransactionToPool(t)) {
-					//updateMoneyInSystem(amount);
+					// updateMoneyInSystem(amount);
 					return true;
 				}
 			}
 			return false;
-		}
-		finally {
+		} finally {
 			w.unlock();
 		}
-		
+
 	}
 
 	private void setHashOfLastProcessedBlock(String hashOfLastProcessedBlock) {
 		this.hashOfLastProcessedBlock = hashOfLastProcessedBlock;
 	}
 
-
 	public void addNewBlockToChain(Block b) {
 		try {
 			w.lock();
 			addBlockToChain(b);
 			setHashOfLastProcessedBlock(b.getHash());
-			b.getTransactions().forEach(t -> {
-				if (!transactionInTransactionPool(t)) {
-					processTransaction(t);
-				}
-			});
+			b.getTransactions()
+					.forEach(t ->
+						{
+							if (!transactionInTransactionPool(t)) {
+								processTransaction(t);
+							}
+						});
 			removeTransactionsFromTransactionPool(b.getTransactions());
-			//writeBlockToDisk(b);
+			// writeBlockToDisk(b);
 		} finally {
 			w.unlock();
 		}
@@ -451,8 +465,7 @@ public class LedgerService implements Ledgers {
 	@Override
 	public String toString() {
 		return "Ledger1 [blockChainLedger=" + blockChainLedger + ", transactionPool=" + transactionPool
-				+ ", unspentTxOutsMap=" + unspentTxOutsMap + ", balances=" + balances + ", moneyInSystem="
-				+ "]";
+				+ ", unspentTxOutsMap=" + unspentTxOutsMap + ", balances=" + balances + ", moneyInSystem=" + "]";
 	}
 
 	@Override
@@ -466,6 +479,5 @@ public class LedgerService implements Ledgers {
 		// TODO Auto-generated method stub
 		return null;
 	}
-
 
 }

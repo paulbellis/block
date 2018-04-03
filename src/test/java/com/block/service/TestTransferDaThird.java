@@ -1,13 +1,9 @@
 package com.block.service;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,14 +15,9 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 
 import com.block.commons.ClientCalls;
-import com.block.commons.JSON;
 import com.block.commons.Properties;
 import com.block.model.AccountBalance;
-import com.block.model.Block;
-import com.block.model.UnspentTxOut;
 import com.block.rest.Server;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 public class TestTransferDaThird {
 
@@ -47,7 +38,7 @@ public class TestTransferDaThird {
 	@Test
 	public void testMultiTransfer() throws ClientProtocolException, IOException, InterruptedException {
 		int accountCount = 100;
-		Server server = new Server("http://localhost",4567);
+		Server server = new Server("http://localhost",4567,"localhost4567");
 		server.start();
 		Thread.sleep(10000);
 		List<String> accountIds = createNAccounts(accountCount);

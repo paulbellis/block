@@ -1,7 +1,13 @@
 package com.block.model;
 
-public class TxIn {
+import java.io.Serializable;
 
+public class TxIn  implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private String txOutId;
 	private int txOutIndex;
 	private String signature;

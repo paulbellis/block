@@ -25,7 +25,7 @@ public interface Ledgers {
 
 	Block getCurrentLastBlock();
 
-	Block mineBlock(String address);
+	Block mineBlock();
 
 	boolean addTransactionToPool(Transaction tx);
 

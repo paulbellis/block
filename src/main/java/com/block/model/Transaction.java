@@ -1,13 +1,21 @@
 package com.block.model;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.SerializationUtils;
+
 import com.block.commons.Hasher;
 
-
-public class Transaction {
+public class Transaction implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	public static final int COINBASE_AMOUNT = 50;
 	private String id;
 	private List<TxIn> txIns;
@@ -33,14 +41,18 @@ public class Transaction {
 	}
 
 	private String hashTxs() {
-		StringBuilder sb = new StringBuilder();
-		for (TxIn txIn : txIns) {
-			sb.append(txIn.getSignature()).append(txIn.getTxOutId()).append(txIn.getTxOutIndex());
-		}
-		for (TxOut txOut : txOuts) {
-			sb.append(txOut.getAddress()).append(txOut.getAmount());
-		}
-		return Hasher.getHash(sb.toString());
+		byte[] doubleHash = Hasher.getHash256AsBytes(Hasher.getHash256AsBytes(SerializationUtils.serialize(this)));
+		ArrayUtils.reverse(doubleHash);
+		return Hex.encodeHexString(doubleHash);
+//		this.toString().getBytes()
+//		StringBuilder sb = new StringBuilder();
+//		for (TxIn txIn : txIns) {
+//			sb.append(txIn.getSignature()).append(txIn.getTxOutId()).append(txIn.getTxOutIndex());
+//		}
+//		for (TxOut txOut : txOuts) {
+//			sb.append(txOut.getAddress()).append(txOut.getAmount());
+//		}
+//		return Hasher.getHash(sb.toString());
 	}
 
 	public String getId() {

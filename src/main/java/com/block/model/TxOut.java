@@ -1,9 +1,14 @@
 package com.block.model;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
-public final class TxOut {
+public final class TxOut implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private String address;
 	private BigDecimal amount;
 	private int index;

@@ -3,8 +3,6 @@ package com.block.service;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Random;
-import java.util.Scanner;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -31,7 +29,7 @@ public class TestTransfer {
 	
 	@Test
 	public void test() throws ClientProtocolException, IOException, InterruptedException {
-		Server server = new Server("http://localhost",4567);
+		Server server = new Server("http://localhost",4567,"localhost4567");
 		server.start();
 	
 		try {

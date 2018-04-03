@@ -7,13 +7,18 @@ import java.util.List;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import com.block.model.Transaction;
+import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 
 public class Hasher {
+
 	private Hasher() {
 	}
 
 	public static String getHash(String str) {
+		if (str == null) {
+			throw new NullPointerException();
+		}
 		return String.valueOf(DigestUtils.md5Hex(str));
 	}
 	
@@ -25,5 +30,28 @@ public class Hasher {
 		return sha256hex;
 	}
 
+	public static String getHash256(String str) {
+		if (str == null) {
+			throw new NullPointerException();
+		}
+		return getHash256(str.getBytes());
+	}
+	
+	public static String getHash256(byte[] str) {
+		if (str == null) {
+			throw new NullPointerException();
+		}
+		HashCode x = Hashing.sha256().hashBytes(str);
+		return x.toString();
+	}
+	
+	public static byte[] getHash256AsBytes(byte[] str) {
+		if (str == null) {
+			throw new NullPointerException();
+		}
+		HashCode x = Hashing.sha256().hashBytes(str);
+		return x.asBytes();
+	}
+	
 
 }

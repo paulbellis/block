@@ -479,13 +479,13 @@ public class Ledger1 implements Ledgers {
 	}
 
 	@Override
-	public Block mineBlock(String address) {
+	public Block mineBlock() {
 		try {
 			w.lock();
 			Block currentLastBlock = getCurrentLastBlock();
 			List<Transaction> transList = transactionPool.stream()
 					.collect(Collectors.toList());
-			Transaction reward = Transaction.createCoinBase(address);
+			Transaction reward = Transaction.createCoinBase("");
 			//processTransaction(reward);
 			transList.add(reward);
 			Miners miner = new BlockchainMiner();
@@ -787,5 +787,6 @@ public class Ledger1 implements Ledgers {
 		// TODO Auto-generated method stub
 		
 	}
+
 
 }
