@@ -6,7 +6,7 @@ public class TestCryptoService {
 
 	@Test
 	public void testGetPublicKeyString() {
-		CryptoService cryptoService = new CryptoService();
+		KeyService cryptoService = new KeyService();
 		cryptoService.addNodeKey("localhost4567");
 		System.out.println(cryptoService.getNodePublicKey());
 	}

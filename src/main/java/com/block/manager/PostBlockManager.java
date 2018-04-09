@@ -26,7 +26,9 @@ public class PostBlockManager implements Route {
 		try {
 			String originatingServer = URLDecoder.decode(request.queryParams("server"),StandardCharsets.UTF_8.toString());
 			Block b = (Block) JSON.fromJson(request.body(), Block.class);
-			BlockService.processNewBlock(b, ledger, originatingServer);
+			if (!BlockService.processNewBlock(b, ledger, originatingServer)) {
+				return "FAILED TO PROCESS BLOCK";
+			}
 		} catch (Exception e) {
 
 		}

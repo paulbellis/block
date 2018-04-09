@@ -12,6 +12,7 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -22,11 +23,12 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Optional;
 
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-public class RSA implements Cryptographies {
+public class RSA implements Keys {
 
 	private static Logger log = LogManager.getLogger(RSA.class);
 	private PrivateKey priv;
@@ -143,6 +145,13 @@ public class RSA implements Cryptographies {
 		return new RSA();
 	}
 	
+	@Override
+	public PublicKey recreatePubKeyFromAddress(String hexEncodedBase64DecodedPemPublicKeyText)
+			throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeySpecException, DecoderException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 	public static void main(String[] args) {
 		RSA myRSA = new RSA();
 		myRSA.init("paul");
@@ -152,5 +161,12 @@ public class RSA implements Cryptographies {
 		
 
 	}
+
+	@Override
+	public String getPublicKeyDecodedHexAddress() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 
 }

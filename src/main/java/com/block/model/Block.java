@@ -16,6 +16,7 @@ public class Block {
 	private List<Transaction> transactions;
 	private int difficulty;
 	private int nonce;
+	private String merkelRoot = "";
 
 	private Block(int index, String hash, String previousHash, Instant timestamp, List<Transaction> transactions,
 			int difficulty, int nonce) {
@@ -27,6 +28,7 @@ public class Block {
 		this.transactions = transactions;
 		this.difficulty = difficulty;
 		this.nonce = nonce;
+		setMerkelRoot();
 	}
 
 	private String getTransactionHashes() {
@@ -92,6 +94,23 @@ public class Block {
 		int nonce = 0;
 		String hash = Hasher.calculateHash(index, previousHash, timestamp, data, difficulty, nonce);
 		return new Block(0, hash, "", Instant.now(), new ArrayList<Transaction>() , 0, 0);
+	}
+
+	public String getMerkelRoot() {
+		return merkelRoot;
+	}
+
+	public static String calculateMerkelRoot(Block b) {
+		String mr = "";
+		for (Transaction tx : b.getTransactions()) {
+			mr = mr + Hasher.getHash256(tx.getId());
+		}
+		mr = Hasher.getHash256(mr);
+		return mr;
+	}
+	
+	private void setMerkelRoot() {
+		this.merkelRoot = Block.calculateMerkelRoot(this);
 	}
 
 

@@ -8,32 +8,51 @@ public class TxIn  implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	private String txOutId;
-	private int txOutIndex;
+//	private String txOutId;
+//	private int txOutIndex;
 	private String signature;
+	private String description;
+	private UnspentTxOut linkedUTxO;
 
-	public TxIn(String txOutId, int txOutIndex, String signature) {
+	private TxIn(UnspentTxOut uTxO, String description) {
 		super();
-		this.txOutId = txOutId;
-		this.txOutIndex = txOutIndex;
-		this.signature = signature;
+		this.linkedUTxO = uTxO;
+//		this.txOutId = txOutId;
+//		this.txOutIndex = txOutIndex;
+		this.description = description;
+	}
+	
+//	public static TxIn valueOf(String txOutId, int txOutIndex, String description) {
+//		return new TxIn(txOutId, txOutIndex, description);
+//	}
+
+	public static TxIn valueOf(UnspentTxOut uTxO , String description) {
+		return new TxIn(uTxO, description);
 	}
 
 	public String getTxOutId() {
-		return txOutId;
+		return linkedUTxO.getTxOutId();
 	}
 
 	public int getTxOutIndex() {
-		return txOutIndex;
+		return linkedUTxO.getTxOutIndex();
 	}
 
 	public String getSignature() {
 		return signature;
 	}
 
+	public UnspentTxOut getLinkedUTxO() {
+		return linkedUTxO;
+	}
+
 	@Override
 	public String toString() {
-		return "[ " + txOutId + ", " + txOutIndex + ", " + signature + "]";
+		return "[ " + getTxOutId() + ", " + getTxOutIndex() + ", " + signature + "]";
+	}
+
+	public void setSignature(String signature) {
+		this.signature = signature;
 	}
 
 }

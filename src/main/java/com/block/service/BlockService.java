@@ -5,8 +5,8 @@ import com.block.model.Block;
 
 public class BlockService {
 
-	public static void processNewBlock(Block b, Ledgers ledger, String originatingIP) {
-		ledger.addIncomingBlockToChain(b,originatingIP);
+	public static boolean processNewBlock(Block b, Ledgers ledger, String originatingIP) {
+		return ledger.processIncomingBlock(b,originatingIP);
 	}
 
 	public static Object getBlock(String hash, String index, Ledgers ledger) {

@@ -4,12 +4,13 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.SerializationUtils;
 
 import com.block.commons.Hasher;
+import com.block.crypto.Keys;
 
 public class Transaction implements Serializable {
 	/**
@@ -33,26 +34,25 @@ public class Transaction implements Serializable {
 		this.id = hashTxs();
 	}
 
-	public static Transaction valueOf(List<TxIn> txIns, List<TxOut> txOuts) {
-		if (txIns == null || txOuts == null || txOuts.isEmpty()) {
+	public static Transaction valueOf(Keys key, List<TxIn> txIns, List<TxOut> txOuts) {
+		if (txIns == null || txOuts == null || txOuts.isEmpty() || key == null) {
 			return null;
 		}
-		return new Transaction(txIns, txOuts);
+		Transaction tx = new Transaction(txIns, txOuts);
+		byte[] signature = key.sign(tx.getId());
+		for (TxIn txIn : txIns) {
+			txIn.setSignature(Hex.encodeHexString(signature));
+		}
+		return tx;
 	}
 
-	private String hashTxs() {
-		byte[] doubleHash = Hasher.getHash256AsBytes(Hasher.getHash256AsBytes(SerializationUtils.serialize(this)));
+	public String hashTxs() {
+		Optional<String> oTxIn = txIns.stream().map((TxIn txIn) -> txIn.getTxOutId() + String.valueOf(txIn.getTxOutIndex())).reduce((s1,s2) -> s1+s2);
+		Optional<String> oTxOut = txOuts.stream().map((TxOut txOut) -> txOut.toString()).reduce((s1,s2) -> s1+s2);
+		String txAsStringToHash = (oTxIn.isPresent()?oTxIn.get():"") + (oTxOut.isPresent()?oTxOut.get():"");
+		byte[] doubleHash = Hasher.getHash256AsBytes(Hasher.getHash256AsBytes(txAsStringToHash.getBytes()));
 		ArrayUtils.reverse(doubleHash);
 		return Hex.encodeHexString(doubleHash);
-//		this.toString().getBytes()
-//		StringBuilder sb = new StringBuilder();
-//		for (TxIn txIn : txIns) {
-//			sb.append(txIn.getSignature()).append(txIn.getTxOutId()).append(txIn.getTxOutIndex());
-//		}
-//		for (TxOut txOut : txOuts) {
-//			sb.append(txOut.getAddress()).append(txOut.getAmount());
-//		}
-//		return Hasher.getHash(sb.toString());
 	}
 
 	public String getId() {
@@ -79,7 +79,7 @@ public class Transaction implements Serializable {
 		TxOut coinBase = TxOut.valueOf(address, new BigDecimal(COINBASE_AMOUNT), 0);
 		List<TxOut> txOuts = new ArrayList<>();
 		txOuts.add(coinBase);
-		return Transaction.valueOf(new ArrayList<>(), txOuts);
+		return new Transaction(new ArrayList<>(), txOuts);
 	}
 
 }

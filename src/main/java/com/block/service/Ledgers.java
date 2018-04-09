@@ -21,7 +21,7 @@ public interface Ledgers {
 
 	void addNewBlockToChain(Block b);
 
-	void addIncomingBlockToChain(Block incomingBlock, String originatingIP);
+	boolean processIncomingBlock(Block incomingBlock, String originatingIP);
 
 	Block getCurrentLastBlock();
 

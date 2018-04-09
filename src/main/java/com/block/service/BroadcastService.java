@@ -95,7 +95,7 @@ public class BroadcastService {
 			int highestIndex = 0;
 			String bestAddress = null;
 			for (String address : nodeList) {
-				Block b = (Block) JSON.fromJson(HttpService.get(address+"/block/" + Ledger1.GET_LAST_BLOCK),Block.class);
+				Block b = (Block) JSON.fromJson(HttpService.get(address+"/block/" + LedgerService.GET_LAST_BLOCK),Block.class);
 				if ( b.getIndex() > highestIndex) {
 					highestIndex = b.getIndex();
 					bestAddress = address;

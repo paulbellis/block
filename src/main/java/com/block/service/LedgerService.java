@@ -1,6 +1,9 @@
 package com.block.service;
 
 import java.math.BigDecimal;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.spec.InvalidKeySpecException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,6 +17,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -23,6 +28,7 @@ import com.block.commons.InsufficientFundsException;
 import com.block.commons.JSON;
 import com.block.commons.Miners;
 import com.block.commons.TxInException;
+import com.block.crypto.ECDSA;
 import com.block.model.Block;
 import com.block.model.Transaction;
 import com.block.model.TxIn;
@@ -40,7 +46,7 @@ public class LedgerService implements Ledgers {
 	private List<Block> blockChainLedger;
 	private String hashOfLastProcessedBlock = null;
 	private BroadcastService broadcastService;
-	private CryptoService key;
+	private KeyService keyService;
 
 	private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock(true);
 	private final Lock r = rwl.readLock();
@@ -48,13 +54,13 @@ public class LedgerService implements Ledgers {
 
 	private int DIFFICULTY = 0;
 
-	public LedgerService(BroadcastService broadcastService, CryptoService key) {
+	public LedgerService(BroadcastService broadcastService, KeyService key) {
 		this(null, broadcastService, key);
 	}
 
-	public LedgerService(List<Block> blockChainLedger, BroadcastService broadcastService, CryptoService key) {
+	public LedgerService(List<Block> blockChainLedger, BroadcastService broadcastService, KeyService key) {
 		this.broadcastService = broadcastService;
-		this.key = key;
+		this.keyService = key;
 		log.debug("CREATING LEDGER1");
 		if (blockChainLedger == null) {
 			this.blockChainLedger = new ArrayList<>();
@@ -152,15 +158,15 @@ public class LedgerService implements Ledgers {
 			w.lock();
 			Queue<UnspentTxOut> unspentTxOuts = unspentTxOutsMap.get(from);
 			List<UnspentTxOut> unspentTxOToCoverAmount = new ArrayList<>();
-			List<TxIn> spentTxOuts = new ArrayList<>();
+			List<TxIn> txInsRepresentingSpentTxOuts = new ArrayList<>();
 			BigDecimal total = new BigDecimal(0);
 
 			if (unspentTxOuts != null) {
 				for (UnspentTxOut uTxO : unspentTxOuts) {
 					total = total.add(uTxO.getAmount());
 					unspentTxOToCoverAmount.add(uTxO);
-					TxIn txIn = new TxIn(uTxO.getTxOutId(), uTxO.getTxOutIndex(), from + "," + to + "," + amount);
-					spentTxOuts.add(txIn);
+					TxIn txIn = TxIn.valueOf(uTxO, from + "," + to + "," + amount);
+					txInsRepresentingSpentTxOuts.add(txIn);
 					if (total.compareTo(amount) >= 0) {
 						break;
 					}
@@ -178,8 +184,8 @@ public class LedgerService implements Ledgers {
 			}
 			TxOut txOut = TxOut.valueOf(to, amount, index++);
 			txOuts.add(txOut);
-			tx = Transaction.valueOf(spentTxOuts, txOuts);
-			if (processTransaction(tx)) {
+			tx = Transaction.valueOf(keyService.getKey(from), txInsRepresentingSpentTxOuts, txOuts);
+			if (tx != null && processTransaction(tx)) {
 				if (addTransactionToPool(tx)) {
 					broadcastService.broadcastTransaction(tx);
 				}
@@ -290,8 +296,7 @@ public class LedgerService implements Ledgers {
 			Block currentLastBlock = getCurrentLastBlock();
 			List<Transaction> transList = transactionPool.stream()
 					.collect(Collectors.toList());
-			Transaction reward = Transaction.createCoinBase(key.getNodePublicKey());
-			// processTransaction(reward);
+			Transaction reward = Transaction.createCoinBase(keyService.getNodePublicKey());
 			transList.add(reward);
 			Miners miner = new BlockchainMiner();
 			Block b = miner.findBlock(currentLastBlock.getIndex() + 1, currentLastBlock.getHash(), Instant.now(),
@@ -309,14 +314,6 @@ public class LedgerService implements Ledgers {
 	// utils
 	public synchronized BigDecimal getBalance(String accountId) throws AccountNotExistException {
 		BigDecimal balancesBalance = balances.get(accountId);
-		// BigDecimal ledgerBalance = calculateBalanceFromLedger(accountId);
-		// BigDecimal transactionPoolBalance =
-		// calculateBalanceFromTransactionPool(accountId);
-		// if (balancesBalance.compareTo(ledgerBalance.add(transactionPoolBalance)) !=
-		// 0) {
-		// log.error("ledger balance does not equal balances balance " + balancesBalance
-		// + " " + ledgerBalance);
-		// }
 		return balancesBalance;
 	}
 
@@ -350,8 +347,7 @@ public class LedgerService implements Ledgers {
 			try {
 				spent = getSpentTxOutsFromTxIns(t.getTxIns());
 			} catch (TxInException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				log.error(e1.getMessage());
 			}
 			removeSpentTxsFromUnspentTxOuts(spent);
 			Map<String, List<UnspentTxOut>> mapSpent = spent.stream()
@@ -390,6 +386,9 @@ public class LedgerService implements Ledgers {
 	public boolean processIncomingTransaction(Transaction t) {
 		try {
 			w.lock();
+			if (!veryifyTransaction(t)) {
+				return false;
+			}
 			if (processTransaction(t)) {
 				if (addTransactionToPool(t)) {
 					// updateMoneyInSystem(amount);
@@ -403,6 +402,23 @@ public class LedgerService implements Ledgers {
 
 	}
 
+	private boolean veryifyTransaction(Transaction tx) {
+		try {
+			if (tx.getTxIns().isEmpty()) {
+				// assume its a coinbase transaction and let it through
+				return true;
+			}
+			for (TxIn txIn : tx.getTxIns()) {
+				if (!ECDSA.verify(ECDSA.getPubKeyFromAddress(txIn.getLinkedUTxO().getAddress()), tx.hashTxs(), Hex.decodeHex(txIn.getSignature().toCharArray()))) {
+					return false;
+				}
+			}
+		} catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException | DecoderException e) {
+			log.error(e.getMessage());
+		}
+		return true;
+	}
+
 	private void setHashOfLastProcessedBlock(String hashOfLastProcessedBlock) {
 		this.hashOfLastProcessedBlock = hashOfLastProcessedBlock;
 	}
@@ -413,10 +429,10 @@ public class LedgerService implements Ledgers {
 			addBlockToChain(b);
 			setHashOfLastProcessedBlock(b.getHash());
 			b.getTransactions()
-					.forEach(t ->
+					.forEach(tx ->
 						{
-							if (!transactionInTransactionPool(t)) {
-								processTransaction(t);
+							if (!transactionInTransactionPool(tx)) {
+								processTransaction(tx);
 							}
 						});
 			removeTransactionsFromTransactionPool(b.getTransactions());
@@ -426,7 +442,16 @@ public class LedgerService implements Ledgers {
 		}
 	}
 
-	public void addIncomingBlockToChain(Block incomingBlock, String originatingIP) {
+	private boolean verifyBlock(Block b) {
+		for (Transaction tx : b.getTransactions()) {
+			if (!veryifyTransaction(tx)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	public boolean processIncomingBlock(Block incomingBlock, String originatingIP) {
 		try {
 			w.lock();
 
@@ -436,11 +461,17 @@ public class LedgerService implements Ledgers {
 					log.error("incoming block has index greater than one greater than current last " + incomingBlock
 							+ " " + myLast);
 				} else {
-					addNewBlockToChain(incomingBlock);
+					if (verifyBlock(incomingBlock)) {
+						addNewBlockToChain(incomingBlock);
+					}
+					else {
+						return false;
+					}
 				}
 			} else {
 				log.error("cannot get mylast block. got null");
 			}
+			return true;
 		} finally {
 			w.unlock();
 		}
@@ -459,7 +490,7 @@ public class LedgerService implements Ledgers {
 			index++;
 		}
 		List<Block> sub = orderedList.subList(index, orderedList.size());
-		sub.forEach(b -> addIncomingBlockToChain(b, ""));
+		sub.forEach(b -> processIncomingBlock(b, ""));
 	}
 
 	@Override

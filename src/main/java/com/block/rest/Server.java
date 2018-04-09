@@ -11,6 +11,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
 import com.block.commons.RemoteNodeBCandTP;
 import com.block.manager.CreateAccountManager;
 import com.block.manager.GetBlockManager;
@@ -25,27 +28,34 @@ import com.block.manager.TransactionManager;
 import com.block.model.DummyStore;
 import com.block.service.BalanceService;
 import com.block.service.BroadcastService;
-import com.block.service.CryptoService;
 import com.block.service.Dump;
+import com.block.service.KeyService;
 import com.block.service.LedgerService;
 import com.block.service.Ledgers;
 
 public class Server {
 
+	private static Logger log = LogManager.getLogger(Server.class);
+	
 	private DummyStore db = new DummyStore();
 	private final String url;
 	private final int port;
 	private BroadcastService broadcastService;
 	private Ledgers ledger;
-//	private String nodeAddress;
 
 	public Server(String url, int port, String user) {
 		this.url = url;
 		this.port = port;
 		broadcastService = new BroadcastService(url,port);
-		CryptoService cryptoService = new CryptoService();
-		cryptoService.addNodeKey(user);
-		ledger = new LedgerService(broadcastService, cryptoService);
+		KeyService keyService = new KeyService();
+		try {
+			keyService.init();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		keyService.addNodeKey(user);
+		ledger = new LedgerService(broadcastService, keyService);
 	}
 
 	public void start() {
@@ -86,23 +96,20 @@ public class Server {
 	public void init(String configFilePath) {
 		if (configFilePath!=null) {
 			Path path = Paths.get(configFilePath);
-			try {
-				Files.readAllLines(path).forEach((String node) -> broadcastService.addAddress(node));
-			} catch (IOException e) {
+			if (path.toFile().exists()) {
+				try {
+					Files.readAllLines(path).forEach((String node) -> broadcastService.addAddress(node));
+				} catch (IOException e) {
+					log.error(e.getMessage());
+				}
 			}
 		}
 	}
 
 	public static void main(String[] args) {
 		Server server = new Server(args[0],Integer.valueOf(args[1]),args[2]);
-		server.init((args.length>2?args[2]:null));
+		server.init(args[3]);
 		server.start();
-//		Server server1 = new Server("http://localhost",4567);
-//		server1.init(null);
-//		server1.start();
-//		Server server2 = new Server("http://localhost",4568);
-//		server2.init("config2.txt");
-//		server2.start();
 	}
 
 }
