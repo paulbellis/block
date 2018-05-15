@@ -5,11 +5,11 @@ import java.math.BigDecimal;
 import java.util.Random;
 
 import org.apache.http.client.ClientProtocolException;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import com.block.commons.ClientCalls;
-import com.block.commons.Properties;
+import com.block.commons.JSON;
+import com.block.commons.URLBuilder;
 import com.block.model.AccountTransfer;
 
 public class TransferRunner implements Runnable {
@@ -35,7 +35,7 @@ public class TransferRunner implements Runnable {
 			AccountTransfer t1 = AccountTransfer.valueOf(from, to, new BigDecimal(amount));
 			try {
 				log.debug("Sending " + t1);
-				ClientCalls.sendTransferRequest(Properties.getTransferURL(),t1);
+				HttpService.post(URLBuilder.transfer("http://localhost",4567),JSON.toJson(t1));
 			} catch (ClientProtocolException e) {
 				log.error(e.getMessage());
 			} catch (IOException e) {

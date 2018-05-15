@@ -30,14 +30,14 @@ public class Hasher {
 		return sha256hex;
 	}
 
-	public static String getHash256(String str) {
+	public static String getHash256OfString(String str) {
 		if (str == null) {
 			throw new NullPointerException();
 		}
-		return getHash256(str.getBytes());
+		return getHash256OfBytes(str.getBytes());
 	}
 	
-	public static String getHash256(byte[] str) {
+	public static String getHash256OfBytes(byte[] str) {
 		if (str == null) {
 			throw new NullPointerException();
 		}

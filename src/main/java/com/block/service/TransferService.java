@@ -2,7 +2,6 @@ package com.block.service;
 
 import java.math.BigDecimal;
 
-import com.block.commons.AccountNotExistException;
 import com.block.commons.InsufficientFundsException;
 import com.block.model.AccountTransfer;
 
@@ -10,7 +9,7 @@ public class TransferService {
 	
 	private Ledgers ledger;
 
-	public static Object transfer(Ledgers ledger, AccountTransfer transfer) throws InsufficientFundsException, AccountNotExistException {
+	public static Object transfer(Ledgers ledger, AccountTransfer transfer) throws InsufficientFundsException {
 		
 		String from = transfer.getFromAccountId();
 		String to = transfer.getToAccountId();

@@ -6,8 +6,8 @@ import java.util.concurrent.Callable;
 
 import org.apache.http.client.ClientProtocolException;
 
-import com.block.commons.ClientCalls;
-import com.block.commons.Properties;
+import com.block.commons.JSON;
+import com.block.commons.URLBuilder;
 import com.block.model.AccountTransfer;
 
 public class TransferCallable implements Callable<Integer> {
@@ -28,7 +28,7 @@ public class TransferCallable implements Callable<Integer> {
 		AccountTransfer t1 = AccountTransfer.valueOf(from, to, new BigDecimal(amount));
 		System.out.println("t,"+from+","+to+","+amount);
 		try {
-			ClientCalls.sendTransferRequest(Properties.getTransferURL(),t1);
+			HttpService.post(URLBuilder.transfer("http://localhost",4567),JSON.toJson(t1));
 		} catch (ClientProtocolException e) {
 		} catch (IOException e) {
 		}

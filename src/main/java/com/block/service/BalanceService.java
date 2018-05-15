@@ -2,15 +2,14 @@ package com.block.service;
 
 import java.math.BigDecimal;
 
-import com.block.commons.AccountNotExistException;
-import com.block.commons.JSON;
+import com.block.model.ResultSet;
 
 import spark.Request;
 import spark.Response;
 import spark.Route;
 
 public class BalanceService implements Route {
-	
+
 	private Ledgers ledger;
 
 	public BalanceService(Ledgers ledger2) {
@@ -23,14 +22,10 @@ public class BalanceService implements Route {
 		BigDecimal balance = null;
 		try {
 			balance = ledger.getBalance(accountId);
+			return new ResultSet.ResultSetBuilder().setOkStatus().setData(balance).build();
+		} catch (Exception e) {
+			return new ResultSet.ResultSetBuilder().setErrorStatus().setData(e.getMessage()).build();
 		}
-		catch (AccountNotExistException e) {
-			return "Account does not exist";
-		}
-		catch (Exception e) {
-			return e.getMessage();
-		}
-		return JSON.toJson(balance);
 	}
 
 }

@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
-import com.block.commons.AccountNotExistException;
 import com.block.commons.InsufficientFundsException;
 import com.block.model.Block;
+import com.block.model.BlockStats;
 import com.block.model.Transaction;
 import com.block.model.UnspentTxOut;
 
@@ -29,12 +29,11 @@ public interface Ledgers {
 
 	boolean addTransactionToPool(Transaction tx);
 
-	Transaction createTransaction(String from, String to, BigDecimal amount)
-			throws InsufficientFundsException, AccountNotExistException;
+	Transaction createTransaction(String from, String to, BigDecimal amount) throws InsufficientFundsException;
 
-	BigDecimal getBalance(String accountId) throws AccountNotExistException;
+	BigDecimal getBalance(String accountId);
 
-	String getBlockChainLedger();
+	List<Block> getBlockChainLedger();
 
 	String toString();
 
@@ -49,5 +48,7 @@ public interface Ledgers {
 	Map<String, Queue<UnspentTxOut>> getUnspentTxOutsMap();
 
 	void processNewTransactionPool(List<Transaction> transactionPool);
+
+	BlockStats getStats(String stats);
 
 }

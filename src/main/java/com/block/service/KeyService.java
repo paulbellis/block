@@ -21,14 +21,13 @@ public class KeyService {
 	}
 
 	public void init() throws IOException {
-		Path p = Paths.get("");
+		Path p = Paths.get("./src/main/resources");
 		Files.find(p, 2, (path, basicFileAttributes) -> path.toAbsolutePath()
 				.toString()
 				.endsWith("ec-priv.pem"))
 				.forEach((Path p1) -> 
 					{
 						String sep = File.separator;
-						System.out.println(sep);
 						String[] dirs = p1.toAbsolutePath().toString().split("\\"+sep);
 						ECDSA ec = new ECDSA();
 						ec.init(dirs[dirs.length-2]);

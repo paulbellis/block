@@ -1,6 +1,5 @@
 package com.block.manager;
 
-import com.block.model.DummyStore;
 import com.block.service.BroadcastService;
 import com.block.service.Ledgers;
 import com.block.service.MiningService;
@@ -13,18 +12,16 @@ public class MiningManager implements Route {
 
 	private Ledgers ledger;
 	private BroadcastService broadcastService;
-	private DummyStore db;
 
-	public MiningManager(Ledgers ledger2, DummyStore db, BroadcastService broadcastService) {
+	public MiningManager(Ledgers ledger2, BroadcastService broadcastService) {
 		super();
 		this.ledger = ledger2;
 		this.broadcastService = broadcastService;
-		this.db = db;
 	}
 
 	@Override
 	public Object handle(Request request, Response response) throws Exception {
-		return MiningService.mine(ledger, db, broadcastService);
+		return MiningService.mine(ledger, broadcastService);
 	}
 
 

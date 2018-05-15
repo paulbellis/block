@@ -13,10 +13,8 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
-import com.block.commons.ClientCalls;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HttpService {
 
@@ -33,7 +31,7 @@ public class HttpService {
 
 	}
 
-	public static void doPost(String url, String body) throws ClientProtocolException, IOException {
+	public static String post(String url, String body) throws ClientProtocolException, IOException {
 		CloseableHttpClient httpclient = HttpClients.createDefault();
 		HttpPost request = new HttpPost(getUri(url));
 
@@ -43,6 +41,10 @@ public class HttpService {
 		request.setHeader("Content-type", "application/json");
 
 		CloseableHttpResponse response = httpclient.execute(request);
+		response = httpclient.execute(request);
+		HttpEntity responseEntity = response.getEntity();
+		String responseString = EntityUtils.toString(responseEntity,"UTF-8");
+		return responseString;
 	}
 
 	public static String get(String url) {

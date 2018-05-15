@@ -1,7 +1,6 @@
 package com.block.service;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -9,27 +8,16 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.client.ClientProtocolException;
-import org.junit.Test;
 
-import com.block.commons.ClientCalls;
-import com.block.commons.Properties;
-import com.block.model.AccountBalance;
 import com.block.rest.Server;
 
 public class TestTransfer {
 
 	private int id = 1;
 
-	private void createAccount() throws ClientProtocolException, IOException {
-		BigDecimal balance = new BigDecimal(100);
-		String accountId = String.valueOf(id++);
-		AccountBalance ab1 = new AccountBalance(accountId, balance.intValue(),0,0);
-		ClientCalls.createAccount(Properties.getCreateURL(), ab1);
-	}
-	
-	@Test
 	public void test() throws ClientProtocolException, IOException, InterruptedException {
-		Server server = new Server("http://localhost",4567,"localhost4567");
+		Server server = new Server();
+		server.init("http://localhost",4567,"paul", "config.txt");
 		server.start();
 	
 		try {
@@ -38,10 +26,6 @@ public class TestTransfer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		for (int i=0;i<100;i++) {
-			createAccount();
-		}
-
 		Random r = new Random();
 		ExecutorService service = Executors.newFixedThreadPool(1);
 		for (int i=0; i<1000; i++ ) {

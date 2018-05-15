@@ -16,9 +16,9 @@ public class PostBlockManager implements Route {
 
 	private Ledgers ledger;
 
-	public PostBlockManager(Ledgers ledger2) {
+	public PostBlockManager(Ledgers ledger) {
 		super();
-		this.ledger = ledger2;
+		this.ledger = ledger;
 	}
 
 	@Override

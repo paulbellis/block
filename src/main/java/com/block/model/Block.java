@@ -9,25 +9,19 @@ import com.block.commons.Hasher;
 
 public class Block {
 
-	private int index;
-	private String hash;
-	private String previousHash;
-	private long timestamp;
+	private BlockHeader header = new BlockHeader();
 	private List<Transaction> transactions;
-	private int difficulty;
-	private int nonce;
-	private String merkelRoot = "";
 
 	private Block(int index, String hash, String previousHash, Instant timestamp, List<Transaction> transactions,
 			int difficulty, int nonce) {
 		super();
-		this.index = index;
-		this.hash = hash;
-		this.previousHash = previousHash;
-		this.timestamp = timestamp.toEpochMilli();
+		this.header.setIndex(index);
+		this.header.setHash(hash);
+		this.header.setPreviousHash(previousHash);
+		this.header.setTimestamp(timestamp.toEpochMilli());
 		this.transactions = transactions;
-		this.difficulty = difficulty;
-		this.nonce = nonce;
+		this.header.setDifficulty(difficulty);
+		this.header.setNonce(nonce);
 		setMerkelRoot();
 	}
 
@@ -42,23 +36,23 @@ public class Block {
 	}
 
 	public int getIndex() {
-		return index;
+		return header.getIndex();
 	}
 
 	public String getHash() {
-		return hash;
+		return header.getHash();
 	}
 
 	public String getPreviousHash() {
-		return previousHash;
+		return header.getPreviousHash();
 	}
 
 	public Instant getTimestampInstant() {
-		return Instant.ofEpochMilli(timestamp);
+		return Instant.ofEpochMilli(header.getTimestamp());
 	}
 
 	public long getTimestamp() {
-		return timestamp;
+		return header.getTimestamp();
 	}
 
 	public List<Transaction> getTransactions() {
@@ -66,17 +60,17 @@ public class Block {
 	}
 
 	public int getDifficulty() {
-		return difficulty;
+		return header.getDifficulty();
 	}
 
 	public int getNonce() {
-		return nonce;
+		return header.getNonce();
 	}
 
 	@Override
 	public String toString() {
-		return "Block [index=" + index + ", hash=" + hash + ", previousHash=" + previousHash + ", timestamp="
-				+ timestamp + ", transactions=" + transactions + ", difficulty=" + difficulty + ", nonce=" + nonce
+		return "Block [index=" + header.getIndex() + ", hash=" + header.getHash() + ", previousHash=" + header.getPreviousHash() + ", timestamp="
+				+ header.getTimestamp() + ", transactions=" + transactions + ", difficulty=" + header.getDifficulty() + ", nonce=" + header.getNonce()
 				+ "]";
 	}
 
@@ -97,20 +91,28 @@ public class Block {
 	}
 
 	public String getMerkelRoot() {
-		return merkelRoot;
+		return header.getMerkelRoot();
 	}
 
 	public static String calculateMerkelRoot(Block b) {
 		String mr = "";
 		for (Transaction tx : b.getTransactions()) {
-			mr = mr + Hasher.getHash256(tx.getId());
+			mr = mr + Hasher.getHash256OfString(tx.getId());
 		}
-		mr = Hasher.getHash256(mr);
+		mr = Hasher.getHash256OfString(mr);
 		return mr;
 	}
 	
 	private void setMerkelRoot() {
-		this.merkelRoot = Block.calculateMerkelRoot(this);
+		this.header.setMerkelRoot(Block.calculateMerkelRoot(this));
+	}
+
+	public BlockHeader getHeader() {
+		return header;
+	}
+
+	public void setHeader(BlockHeader header) {
+		this.header = header;
 	}
 
 

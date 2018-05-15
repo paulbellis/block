@@ -19,17 +19,16 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import com.block.commons.AccountNotExistException;
 import com.block.commons.BlockchainMiner;
 import com.block.commons.InsufficientFundsException;
-import com.block.commons.JSON;
 import com.block.commons.Miners;
 import com.block.commons.TxInException;
 import com.block.crypto.ECDSA;
 import com.block.model.Block;
+import com.block.model.BlockStats;
 import com.block.model.Transaction;
 import com.block.model.TxIn;
 import com.block.model.TxOut;
@@ -52,7 +51,8 @@ public class LedgerService implements Ledgers {
 	private final Lock r = rwl.readLock();
 	private final Lock w = rwl.writeLock();
 
-	private int DIFFICULTY = 0;
+	private int difficulty = 4;
+	private int cummulativeDifficulty;
 
 	public LedgerService(BroadcastService broadcastService, KeyService key) {
 		this(null, broadcastService, key);
@@ -61,7 +61,6 @@ public class LedgerService implements Ledgers {
 	public LedgerService(List<Block> blockChainLedger, BroadcastService broadcastService, KeyService key) {
 		this.broadcastService = broadcastService;
 		this.keyService = key;
-		log.debug("CREATING LEDGER1");
 		if (blockChainLedger == null) {
 			this.blockChainLedger = new ArrayList<>();
 			Block block = Block.createGenesisBlock();
@@ -83,7 +82,7 @@ public class LedgerService implements Ledgers {
 	public Block getCurrentLastBlock() {
 		try {
 			r.lock();
-			if (blockChainLedger != null && blockChainLedger.size() > 0) {
+			if (blockChainLedger != null && !blockChainLedger.isEmpty()) {
 				return blockChainLedger.get(blockChainLedger.size() - 1);
 			}
 			return null;
@@ -92,21 +91,30 @@ public class LedgerService implements Ledgers {
 		}
 	}
 
+	public int getCummulativeDifficulty() {
+		return cummulativeDifficulty;
+	}
+
+	private void setCummulativeDifficulty(int cummulativeDifficulty) {
+		this.cummulativeDifficulty = cummulativeDifficulty;
+	}
+
 	private void addBlockToChain(Block b) {
 		w.lock();
 		try {
 			blockChainLedger.add(b);
+			setCummulativeDifficulty(calculateCumulativeDifficulty());
 		} finally {
 			w.unlock();
 		}
 	}
 
 	public Block getBlock(Integer index) {
+		if (index == null) {
+			return null;
+		}
 		try {
 			r.lock();
-			if (index == null) {
-				return null;
-			}
 			Optional<Block> ob = blockChainLedger.stream()
 					.filter((Block b) -> b.getIndex() == index)
 					.findFirst();
@@ -137,8 +145,16 @@ public class LedgerService implements Ledgers {
 		}
 	}
 
-	public String getBlockChainLedger() {
-		return JSON.toJson(blockChainLedger);
+	public List<Block> getBlockChainLedger() {
+		return blockChainLedger;
+	}
+
+	public int calculateCumulativeDifficulty() {
+		double cd = 0;
+		for (Block b : blockChainLedger) {
+			cd = cd + Math.pow(2, b.getDifficulty());
+		}
+		return (int) cd;
 	}
 
 	// Transaction
@@ -151,8 +167,7 @@ public class LedgerService implements Ledgers {
 		return blockUnspextTxOuts;
 	}
 
-	public Transaction createTransaction(String from, String to, BigDecimal amount)
-			throws InsufficientFundsException, AccountNotExistException {
+	public Transaction createTransaction(String from, String to, BigDecimal amount) throws InsufficientFundsException {
 		Transaction tx = null;
 		try {
 			w.lock();
@@ -300,7 +315,7 @@ public class LedgerService implements Ledgers {
 			transList.add(reward);
 			Miners miner = new BlockchainMiner();
 			Block b = miner.findBlock(currentLastBlock.getIndex() + 1, currentLastBlock.getHash(), Instant.now(),
-					transList, DIFFICULTY);
+					transList, difficulty);
 			if (b != null) {
 				addNewBlockToChain(b);
 				return b;
@@ -312,7 +327,7 @@ public class LedgerService implements Ledgers {
 	}
 
 	// utils
-	public synchronized BigDecimal getBalance(String accountId) throws AccountNotExistException {
+	public synchronized BigDecimal getBalance(String accountId) {
 		BigDecimal balancesBalance = balances.get(accountId);
 		return balancesBalance;
 	}
@@ -404,12 +419,16 @@ public class LedgerService implements Ledgers {
 
 	private boolean veryifyTransaction(Transaction tx) {
 		try {
-			if (tx.getTxIns().isEmpty()) {
+			if (tx.getTxIns()
+					.isEmpty()) {
 				// assume its a coinbase transaction and let it through
 				return true;
 			}
 			for (TxIn txIn : tx.getTxIns()) {
-				if (!ECDSA.verify(ECDSA.getPubKeyFromAddress(txIn.getLinkedUTxO().getAddress()), tx.hashTxs(), Hex.decodeHex(txIn.getSignature().toCharArray()))) {
+				if (!ECDSA.verify(ECDSA.getPubKeyFromAddress(txIn.getLinkedUTxO()
+						.getAddress()), tx.hashTxs(), Hex.decodeHex(
+								txIn.getSignature()
+										.toCharArray()))) {
 					return false;
 				}
 			}
@@ -450,7 +469,7 @@ public class LedgerService implements Ledgers {
 		}
 		return true;
 	}
-	
+
 	public boolean processIncomingBlock(Block incomingBlock, String originatingIP) {
 		try {
 			w.lock();
@@ -463,8 +482,7 @@ public class LedgerService implements Ledgers {
 				} else {
 					if (verifyBlock(incomingBlock)) {
 						addNewBlockToChain(incomingBlock);
-					}
-					else {
+					} else {
 						return false;
 					}
 				}
@@ -511,4 +529,19 @@ public class LedgerService implements Ledgers {
 		return null;
 	}
 
+	public int getDifficulty() {
+		return difficulty;
+	}
+
+	public void setDifficulty(int difficulty) {
+		this.difficulty = difficulty;
+	}
+
+	@Override
+	public BlockStats getStats(String stats) {
+		BlockStats bs = BlockStats.create();
+		bs.setStat(BlockStats.CURRENT_LAST_HEADER, getCurrentLastBlock().getHeader());
+		bs.setStat(BlockStats.CUMMULATIVE_DIFFICULTY, getCummulativeDifficulty());
+		return bs;
+	}
 }

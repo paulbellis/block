@@ -2,9 +2,10 @@ package com.block.commons;
 
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Map;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -45,4 +46,19 @@ public class JSON {
 		return l;
 	}
 
+//	Type type = new TypeToken<Map<String, String>>(){}.getType();
+//	Map<String, String> myMap = gson.fromJson("{'k1':'apple','k2':'orange'}", type);
+	public static <K,V> Map<K,V> fromJsonToMap(String json, Type type) {
+		Gson mapper = new GsonBuilder().setPrettyPrinting().create();
+		Map<K,V> m = null;
+		try {
+			m = mapper.fromJson(json, type); 
+		}
+		catch (JsonParseException e) {
+			log.error(e.getMessage());
+		}
+		return m;
+	}
+
+	
 }
