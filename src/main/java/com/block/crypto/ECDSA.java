@@ -230,9 +230,6 @@ public class ECDSA implements Keys {
 
     private void setPub(PublicKey pub) {
         this.pub = pub;
-        System.out.println(pub.getEncoded());
-        System.out.println(Hex.encodeHex(pub.getEncoded()));
-        System.out.println(Hex.encodeHexString(pub.getEncoded()));
         setPublicKeyDecodedHexAddress(Hex.encodeHexString(pub.getEncoded()));
     }
 
