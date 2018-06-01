@@ -1,6 +1,11 @@
 package com.block.service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.spec.InvalidKeySpecException;
@@ -24,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.block.commons.BlockchainMiner;
 import com.block.commons.InsufficientFundsException;
+import com.block.commons.JSON;
 import com.block.commons.Miners;
 import com.block.commons.TxInException;
 import com.block.crypto.ECDSA;
@@ -36,6 +42,7 @@ import com.block.model.UnspentTxOut;
 
 public class LedgerService implements Ledgers {
 	public static final String GET_LAST_BLOCK = "last";
+	public static final int GENESIS_BLOCK_INDEX = 0;
 
 	private static Logger log = LogManager.getLogger(LedgerService.class);
 
@@ -79,13 +86,15 @@ public class LedgerService implements Ledgers {
 	}
 
 	// Blockchain
-	public Block getCurrentLastBlock() {
+	public Optional<Block> getCurrentLastBlock() {
 		try {
 			r.lock();
 			if (blockChainLedger != null && !blockChainLedger.isEmpty()) {
-				return blockChainLedger.get(blockChainLedger.size() - 1);
+				return Optional.of(blockChainLedger.get(blockChainLedger.size() - 1));
 			}
-			return null;
+			else {
+				return Optional.empty();
+			}
 		} finally {
 			r.unlock();
 		}
@@ -104,40 +113,39 @@ public class LedgerService implements Ledgers {
 		try {
 			blockChainLedger.add(b);
 			setCummulativeDifficulty(calculateCumulativeDifficulty());
+			writeBlockToDisk(b);
 		} finally {
 			w.unlock();
 		}
 	}
 
-	public Block getBlock(Integer index) {
+	public Optional<Block> getBlockIndex(Integer index) {
 		if (index == null) {
-			return null;
+			return Optional.empty();
 		}
 		try {
 			r.lock();
-			Optional<Block> ob = blockChainLedger.stream()
+			return blockChainLedger.stream()
 					.filter((Block b) -> b.getIndex() == index)
 					.findFirst();
-			return (ob.isPresent() ? ob.get() : null);
 		} finally {
 			r.unlock();
 		}
 	}
 
-	public Block getBlock(String hash) {
+	public Optional<Block> getBlockHash(String hash) {
 		try {
 			r.lock();
 			if (hash == null) {
-				return null;
+				return Optional.empty();
 			} else {
 				if (hash.equals(GET_LAST_BLOCK)) {
 					return getCurrentLastBlock();
 				} else {
-					Optional<Block> ob = blockChainLedger.stream()
+					return blockChainLedger.stream()
 							.filter((Block b) -> b.getHash()
 									.equals(hash))
 							.findFirst();
-					return (ob.isPresent() ? ob.get() : null);
 				}
 			}
 		} finally {
@@ -308,17 +316,20 @@ public class LedgerService implements Ledgers {
 	public Block mineBlock() {
 		try {
 			w.lock();
-			Block currentLastBlock = getCurrentLastBlock();
-			List<Transaction> transList = transactionPool.stream()
-					.collect(Collectors.toList());
-			Transaction reward = Transaction.createCoinBase(keyService.getNodePublicKey());
-			transList.add(reward);
-			Miners miner = new BlockchainMiner();
-			Block b = miner.findBlock(currentLastBlock.getIndex() + 1, currentLastBlock.getHash(), Instant.now(),
-					transList, difficulty);
-			if (b != null) {
-				addNewBlockToChain(b);
-				return b;
+			Optional<Block> ob = getCurrentLastBlock();
+			if (ob.isPresent()) {
+				Block currentLastBlock = ob.get();
+				List<Transaction> transList = transactionPool.stream()
+						.collect(Collectors.toList());
+				Transaction reward = Transaction.createCoinBase(keyService.getNodePublicKey());
+				transList.add(reward);
+				Miners miner = new BlockchainMiner();
+				Block b = miner.findBlock(currentLastBlock.getIndex() + 1, currentLastBlock.getHash(), Instant.now(),
+						transList, difficulty);
+				if (b != null) {
+					addNewBlockToChain(b);
+					return b;
+				}
 			}
 		} finally {
 			w.unlock();
@@ -455,9 +466,17 @@ public class LedgerService implements Ledgers {
 							}
 						});
 			removeTransactionsFromTransactionPool(b.getTransactions());
-			// writeBlockToDisk(b);
 		} finally {
 			w.unlock();
+		}
+	}
+
+	private void writeBlockToDisk(Block b) {
+		Path p = Paths.get("/tmp/"+b.getHash()+".txt");
+		try {
+			Files.write(p, JSON.toJson(b).getBytes(), StandardOpenOption.CREATE_NEW);
+		} catch (IOException e) {
+			log.error(e.getMessage());
 		}
 	}
 
@@ -473,23 +492,28 @@ public class LedgerService implements Ledgers {
 	public boolean processIncomingBlock(Block incomingBlock, String originatingIP) {
 		try {
 			w.lock();
-
-			Block myLast = getCurrentLastBlock();
-			if (myLast != null) {
-				if (incomingBlock.getIndex() - myLast.getIndex() > 1) {
-					log.error("incoming block has index greater than one greater than current last " + incomingBlock
-							+ " " + myLast);
-				} else {
-					if (verifyBlock(incomingBlock)) {
-						addNewBlockToChain(incomingBlock);
+			Optional<Block> ob = getCurrentLastBlock();
+			if (ob.isPresent()) {
+				Block myLast = ob.get(); 
+				if (myLast != null) {
+					if (incomingBlock.getIndex() - myLast.getIndex() > 1) {
+						log.error("incoming block has index greater than one greater than current last " + incomingBlock
+								+ " " + myLast);
 					} else {
-						return false;
+						if (verifyBlock(incomingBlock)) {
+							addNewBlockToChain(incomingBlock);
+						} else {
+							return false;
+						}
 					}
+				} else {
+					log.error("cannot get mylast block. got null");
 				}
-			} else {
-				log.error("cannot get mylast block. got null");
+				return true;
 			}
-			return true;
+			else {
+				return false;
+			}
 		} finally {
 			w.unlock();
 		}
@@ -540,7 +564,7 @@ public class LedgerService implements Ledgers {
 	@Override
 	public BlockStats getStats(String stats) {
 		BlockStats bs = BlockStats.create();
-		bs.setStat(BlockStats.CURRENT_LAST_HEADER, getCurrentLastBlock().getHeader());
+		bs.setStat(BlockStats.CURRENT_LAST_HEADER, getCurrentLastBlock().get().getHeader());
 		bs.setStat(BlockStats.CUMMULATIVE_DIFFICULTY, getCummulativeDifficulty());
 		return bs;
 	}

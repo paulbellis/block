@@ -2,6 +2,8 @@ package com.block.service;
 
 import static org.junit.Assert.assertTrue;
 
+import java.util.Optional;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -42,8 +44,8 @@ public class TestBlockService {
 	@Test
 	public void testGetBlockWithHash() {
 		LedgerService ledger = Mockito.mock(LedgerService.class);
-		Block b = Block.createGenesisBlock();
-		Mockito.when(ledger.getBlock(Mockito.anyString())).thenReturn(b);
+		Optional<Block> b = Optional.of(Block.createGenesisBlock());
+		Mockito.when(ledger.getBlockHash(Mockito.anyString())).thenReturn(b);
 		ResultSet rs = (ResultSet) JSON.fromJson((String) BlockService.getBlock("abc", "123", ledger), ResultSet.class);
 		assertTrue(rs.getStatus().equals(ResultSet.SUCCESS));
 	}

@@ -3,6 +3,7 @@ package com.block.service;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 
 import com.block.commons.InsufficientFundsException;
@@ -23,7 +24,7 @@ public interface Ledgers {
 
 	boolean processIncomingBlock(Block incomingBlock, String originatingIP);
 
-	Block getCurrentLastBlock();
+	Optional<Block> getCurrentLastBlock();
 
 	Block mineBlock();
 
@@ -39,9 +40,9 @@ public interface Ledgers {
 
 	Queue<Transaction> getTransactionPool();
 
-	Block getBlock(String hash);
+	Optional<Block> getBlockHash(String hash);
 
-	Block getBlock(Integer index);
+	Optional<Block> getBlockIndex(Integer index);
 
 	void processNewBlockChain(List<Block> bestBlockChain);
 

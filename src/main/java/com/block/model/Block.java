@@ -87,7 +87,7 @@ public class Block {
 		int difficulty = 0;
 		int nonce = 0;
 		String hash = Hasher.calculateHash(index, previousHash, timestamp, data, difficulty, nonce);
-		return new Block(0, hash, "", Instant.now(), new ArrayList<Transaction>() , 0, 0);
+		return new Block(0, hash, "", timestamp, new ArrayList<Transaction>() , 0, 0);
 	}
 
 	public String getMerkelRoot() {

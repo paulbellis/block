@@ -1,5 +1,7 @@
 package com.block.service;
 
+import java.util.Optional;
+
 import com.block.model.Block;
 import com.block.model.ResultSet;
 
@@ -9,12 +11,12 @@ public class BlockService {
 		return ledger.processIncomingBlock(b, originatingIP);
 	}
 
-	private static Block getBlockByHash(String hash, Ledgers ledger) {
-		return ledger.getBlock(hash);
+	private static Optional<Block> getBlockByHash(String hash, Ledgers ledger) {
+		return ledger.getBlockHash(hash);
 	}
 
-	private static Block getBlockByIndex(Integer i, Ledgers ledger) {
-		return ledger.getBlock(i);
+	private static Optional<Block> getBlockByIndex(Integer i, Ledgers ledger) {
+		return ledger.getBlockIndex(i);
 	}
 
 	public static Object getBlock(String hash, String index, Ledgers ledger) {
@@ -32,16 +34,16 @@ public class BlockService {
 				return new ResultSet.ResultSetBuilder().setErrorStatus().setData(e.getMessage()).build();
 			}
 		}
-		Block b = null;
+		Optional<Block> ob;
 		if (hash != null) {
-			b = getBlockByHash(hash, ledger);
+			ob = getBlockByHash(hash, ledger);
 		} else {
-			b = getBlockByIndex(i, ledger);
+			ob = getBlockByIndex(i, ledger);
 		}
-		if (b == null) {
-			return new ResultSet.ResultSetBuilder().setErrorStatus().setData(b).build();
+		if (ob.isPresent()) {
+			return new ResultSet.ResultSetBuilder().setOkStatus().setData(ob.get()).build();
 		} else {
-			return new ResultSet.ResultSetBuilder().setOkStatus().setData(b).build();
+			return new ResultSet.ResultSetBuilder().setErrorStatus().build();
 		}
 	}
 }
