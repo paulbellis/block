@@ -33,75 +33,76 @@ import com.block.service.Ledgers;
 
 public class Server {
 
-	private static Logger log = LogManager.getLogger(Server.class);
+    private static Logger log = LogManager.getLogger(Server.class);
 
-	private String url;
-	private int port;
-	private BroadcastService broadcastService;
-	private Ledgers ledger;
-	private MessageParameters params = new MessageParameters();
-	
-	public void start() {
-		port(port);
-		get("/ledger", new GetBlockchainManager(ledger));
-		get("/balance/:id", new BalanceService(ledger));
-		//post("/create", new CreateAccountManager(db, ledger));
-		put("/transfer", new TransferManager(ledger));
-		post("/transaction", new TransactionManager(ledger));
-		//post("/servers", new PostServersManager(broadcastService, ledger));
-		post("/servers", new ProcessMessage(params));
-		post("/seed", new ProcessMessage(params));
-		get("/servers", new GetServersManager(broadcastService));
-		post("/stats", new ProcessMessage(params));
-		get("/mine", new MiningManager(ledger, broadcastService));
-		post("/block", new PostBlockManager(ledger));
-		get("/block/:hash", new GetBlockManager(ledger));
-		get("/block", new GetBlockManager(ledger));
-		get("/pool", new GetTransactionPoolManager(ledger));
-		get("/unspent", new GetUnspentTransactionsManager(ledger));
-		startup();
-	}
+    private String url;
+    private int port;
+    private BroadcastService broadcastService;
+    private Ledgers ledger;
+    private MessageParameters params = new MessageParameters();
 
-	private void startup() {
-		broadcastService.peerPing(ledger);
-	}
+    public void start() {
+        port(port);
+        get("/api/ledger", new GetBlockchainManager(ledger));
+        get("/api/balance/:id", new BalanceService(ledger));
+        //post("/create", new CreateAccountManager(db, ledger));
+        put("/api/transfer", new TransferManager(ledger));
+        post("/api/transaction", new TransactionManager(ledger));
+        //post("/servers", new PostServersManager(broadcastService, ledger));
+        post("/api/servers", new ProcessMessage(params));
+        post("/api/seed", new ProcessMessage(params));
+        get("/api/servers", new GetServersManager(broadcastService));
+        post("/api/stats", new ProcessMessage(params));
+        get("/api/mine", new MiningManager(ledger, broadcastService));
+        post("/api/block", new PostBlockManager(ledger));
+        get("/api/block/:hash", new GetBlockManager(ledger));
+        get("/api/block", new GetBlockManager(ledger));
+        get("/api/pool", new GetTransactionPoolManager(ledger));
+        get("/api/unspent", new GetUnspentTransactionsManager(ledger));
+        startup();
+    }
 
-	public void stopServer() {
-		stop();
-	}
+    private void startup() {
+        broadcastService.peerPing(ledger);
+    }
 
-	public void init(String url, int port, String user, String configFilePath) {
-		this.url = url;
-		this.port = port;
-		broadcastService = new BroadcastService(url, port);
-		KeyService keyService = new KeyService();
-		try {
-			keyService.init();
-		} catch (IOException e) {
-			log.error(e.getMessage());
-		}
-		keyService.addNodeKey(user);
-		ledger = new LedgerService(broadcastService, keyService);
+    public void stopServer() {
+        stop();
+    }
 
-		params.setBroadcastService(broadcastService);
-		params.setLedgerService(ledger);
-		
-		if (configFilePath != null) {
-			Path path = Paths.get(configFilePath);
-			if (path.toFile().exists()) {
-				try {
-					Files.readAllLines(path).forEach((String node) -> broadcastService.addAddress(node));
-				} catch (IOException e) {
-					log.error(e.getMessage());
-				}
-			}
-		}
-	}
+    public void init(String url, int port, String user, String configFilePath) {
+        log.info("Starting " + url + ":" + port + " user " + user + " " + configFilePath);
+        this.url = url;
+        this.port = port;
+        broadcastService = new BroadcastService(url, port);
+        KeyService keyService = new KeyService();
+        try {
+            keyService.init();
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+        keyService.addNodeKey(user);
+        ledger = new LedgerService(broadcastService, keyService);
 
-	public static void main(String[] args) {
-		Server server = new Server();
-		server.init(args[0], Integer.valueOf(args[1]), args[2], args[3]);
-		server.start();
-	}
+        params.setBroadcastService(broadcastService);
+        params.setLedgerService(ledger);
+
+        if (configFilePath != null) {
+            Path path = Paths.get(configFilePath);
+            if (path.toFile().exists()) {
+                try {
+                    Files.readAllLines(path).forEach((String node) -> broadcastService.addAddress(node));
+                } catch (IOException e) {
+                    log.error(e.getMessage());
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        Server server = new Server();
+        server.init(args[0], Integer.valueOf(args[1]), args[2], args[3]);
+        server.start();
+    }
 
 }

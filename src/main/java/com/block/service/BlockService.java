@@ -7,8 +7,8 @@ import com.block.model.ResultSet;
 
 public class BlockService {
 
-	public static boolean processNewBlock(Block b, Ledgers ledger, String originatingIP) {
-		return ledger.processIncomingBlock(b, originatingIP);
+	public static boolean processNewBlock(Block b, Ledgers ledger) {
+		return ledger.processIncomingBlock(b);
 	}
 
 	private static Optional<Block> getBlockByHash(String hash, Ledgers ledger) {

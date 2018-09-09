@@ -22,7 +22,7 @@ public interface Ledgers {
 
 	void addNewBlockToChain(Block b);
 
-	boolean processIncomingBlock(Block incomingBlock, String originatingIP);
+	boolean processIncomingBlock(Block incomingBlock);
 
 	Optional<Block> getCurrentLastBlock();
 
@@ -50,6 +50,6 @@ public interface Ledgers {
 
 	void processNewTransactionPool(List<Transaction> transactionPool);
 
-	BlockStats getStats(String stats);
+	BlockStats getStats();
 
 }

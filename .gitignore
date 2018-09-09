@@ -2,3 +2,8 @@ log.out
 target
 .gradle
 build
+out
+*.iml
+paul
+localhost4567
+.idea

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import com.block.rest.Api;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,7 +47,7 @@ public class BroadcastService {
 	public void broadcastTransaction(Transaction t) {
 		for (String address : nodeList) {
 			try {
-				HttpService.post(address + "/transaction", JSON.toJson(t));
+				HttpService.post(address + Api.API_TRANSACTION, JSON.toJson(t));
 			} catch (IOException e) {
 			}
 		}
@@ -55,7 +56,7 @@ public class BroadcastService {
 	public void broadcastBlock(Block b) {
 		for (String address : nodeList) {
 			try {
-				String url = address + "/block?server=";
+				String url = address + Api.API_BLOCK +"?server=";
 				HttpService.post(url + URLEncoder.encode(THIS_SERVER, StandardCharsets.UTF_8.toString()),
 						JSON.toJson(b));
 			} catch (IOException e) {
@@ -98,7 +99,7 @@ public class BroadcastService {
 
 	public void getNetworkNodes() {
 		for (String address : nodeList) {
-			List<String> newNodes = JSON.fromJsonToList(HttpService.get(address + "/servers"),
+			List<String> newNodes = JSON.fromJsonToList(HttpService.get(address + Api.API_SERVERS),
 					new TypeToken<List<String>>() {
 					}.getType());
 			addAddresses(newNodes);
@@ -115,7 +116,7 @@ public class BroadcastService {
 		List<String> failedAddresses = new ArrayList<>();
 		for (String address : addressList) {
 			try {
-				HttpService.post(address + "/servers", JSON.toJson(Message.create(
+				HttpService.post(address + Api.API_SERVERS, JSON.toJson(Message.create(
 						MessageHeader.create(MessageType.BROADCAST_NODES),
 						MessageBody.create(JSON.toJson(BroadcastNodesMessage.createMessage(THIS_SERVER, nodeList))))));
 			} catch (IOException e) {
@@ -157,11 +158,11 @@ public class BroadcastService {
 				}
 			}
 			if (bestAddress != null) {
-				ResultSet rs = (ResultSet) JSON.fromJson(HttpService.get(bestAddress + "/ledger"), ResultSet.class);
+				ResultSet rs = (ResultSet) JSON.fromJson(HttpService.get(bestAddress + Api.API_LEDGER), ResultSet.class);
 				String ledger = (String) rs.getData();
 				List<Block> blockchain = JSON.fromJsonToList(ledger, new TypeToken<List<Block>>() {
 				}.getType());
-				String tp = HttpService.get(bestAddress + "/pool");
+				String tp = HttpService.get(bestAddress + Api.API_POOL);
 				List<Transaction> transactionPool = JSON.fromJsonToList(tp, new TypeToken<List<Transaction>>() {
 				}.getType());
 				return RemoteNodeBCandTP.valueOf(blockchain, transactionPool);

@@ -5,9 +5,7 @@ import com.block.commons.JSON;
 import com.block.crypto.DummyKey;
 import com.block.crypto.Keys;
 import com.block.crypto.ECDSA;
-import com.block.model.Block;
-import com.block.model.Transaction;
-import com.block.model.UnspentTxOut;
+import com.block.model.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -15,9 +13,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 
 import static org.junit.Assert.assertTrue;
 
@@ -27,6 +23,8 @@ public class LedgerServiceTest {
     private static String GENISIS_BLOCK = "{\"header\":{\"index\":0,\"hash\":\"324f086d2eb360f7479454f337e9f2dedd8d1b0f79339976fa07f6f179ef04ff\",\"previousHash\":\"\",\"timestamp\":767358000,\"difficulty\":0,\"nonce\":0,\"merkelRoot\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"},\"transactions\":[]}";
     private static String A_MINED_BLOCK = "{\"header\":{\"index\":1,\"hash\":\"04048095572471bda2020e9cdda5a0806e8c92fb65c8fe1916f86ee440820d7d\",\"previousHash\":\"324f086d2eb360f7479454f337e9f2dedd8d1b0f79339976fa07f6f179ef04ff\",\"timestamp\":1527411229573,\"difficulty\":4,\"nonce\":9,\"merkelRoot\":\"07935e8dafd0ed9644b5e720f75d7c9ea408beb093130371d4155f749d6e4e19\"},\"transactions\":[{\"id\":\"804ce90eb5f04b5929085d013568e2deb2739c0119bd34ab8ae1b4fa0662e027\",\"txIns\":[],\"txOuts\":[{\"address\":\"3059301306072a8648ce3d020106082a8648ce3d030107034200042954842af7503bb4d9c5b8e0d7582aa623ee65e8dcb4008139a97c5b3f70094b647fb0c95dcba2e84ca97929151f80ac1aaf8d0a0380b60f4f2ddebc6fc276de\",\"amount\":50,\"index\":0}]}]}";
     private static String ADDRESS_WITH_CASH = "3059301306072a8648ce3d020106082a8648ce3d030107034200042954842af7503bb4d9c5b8e0d7582aa623ee65e8dcb4008139a97c5b3f70094b647fb0c95dcba2e84ca97929151f80ac1aaf8d0a0380b60f4f2ddebc6fc276de";
+    private static String A_GOOD_TX = "{\"id\":\"ffc9e4badf92c5185f9a16f1058e1cdb6e9b2d56c0db596b59d3f381eddbf5b8\",\"txIns\":[{\"signature\":\"3046022100b11a095e068bc28a624cdefbb97ae76b3e37bdbeb058d357d84e650afa662456022100f9a0d2e5efa81cd57dbbc0534028187583d00a60faee31d51aae6ec1dbb3decc\",\"description\":\"3059301306072a8648ce3d020106082a8648ce3d030107034200042954842af7503bb4d9c5b8e0d7582aa623ee65e8dcb4008139a97c5b3f70094b647fb0c95dcba2e84ca97929151f80ac1aaf8d0a0380b60f4f2ddebc6fc276de,1,3\",\"linkedUTxO\":{\"txOutId\":\"804ce90eb5f04b5929085d013568e2deb2739c0119bd34ab8ae1b4fa0662e027\",\"txOutIndex\":0,\"address\":\"3059301306072a8648ce3d020106082a8648ce3d030107034200042954842af7503bb4d9c5b8e0d7582aa623ee65e8dcb4008139a97c5b3f70094b647fb0c95dcba2e84ca97929151f80ac1aaf8d0a0380b60f4f2ddebc6fc276de\",\"amount\":50}}],\"txOuts\":[{\"address\":\"3059301306072a8648ce3d020106082a8648ce3d030107034200042954842af7503bb4d9c5b8e0d7582aa623ee65e8dcb4008139a97c5b3f70094b647fb0c95dcba2e84ca97929151f80ac1aaf8d0a0380b60f4f2ddebc6fc276de\",\"amount\":47,\"index\":0},{\"address\":\"1\",\"amount\":3,\"index\":1}]}";
+
     @Mock
     BroadcastService broadcastService;
 
@@ -175,58 +173,119 @@ public class LedgerServiceTest {
 
     @Test
     public void getTransactionPool() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        Queue<Transaction> txPool = ledger.getTransactionPool();
+        assertTrue(txPool.isEmpty());
+        Keys key = new DummyKey();
+        Transaction tx = Transaction.valueOf(key, new ArrayList<>(), new ArrayList<>());
+        ledger.addTransactionToPool(tx);
+        Queue<Transaction> txPoolAfter = ledger.getTransactionPool();
+        assertTrue(txPoolAfter.contains(tx));
     }
 
     @Test
     public void processNewTransactionPool() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        Queue<Transaction> txPoolBefore = ledger.getTransactionPool();
+        assertTrue(txPoolBefore.isEmpty());
+        Keys key = new DummyKey();
+        Transaction tx = Transaction.valueOf(key, new ArrayList<>(), new ArrayList<>());
+        List<Transaction> txPool = new ArrayList<>();
+        txPool.add(tx);
+        ledger.processNewTransactionPool(txPool);
+        Queue<Transaction> txPoolAfter = ledger.getTransactionPool();
+        assertTrue(txPoolAfter.contains(tx));
     }
 
     @Test
     public void getUnspentTxOutsMap() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        Map<String, Queue<UnspentTxOut>> x = ledger.getUnspentTxOutsMap();
+        assertTrue(x.isEmpty());
     }
 
     @Test
     public void mineBlock() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        ledger.mineBlock();
+        assertTrue(ledger.getBlockChainLedger().size()==2);
     }
 
     @Test
     public void getBalance() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        ledger.mineBlock();
+        ledger.createTransaction(ADDRESS_WITH_CASH, "123", BigDecimal.TEN);
+        assertTrue(ledger.getBalance("123").compareTo(BigDecimal.TEN) == 0);
     }
 
     @Test
     public void processIncomingTransaction() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        Transaction tx = (Transaction) JSON.fromJson( A_GOOD_TX , Transaction.class );
+        Queue<Transaction> txPool = ledger.getTransactionPool();
+        assertTrue(txPool.isEmpty());
+        ledger.processIncomingTransaction(tx);
+        txPool = ledger.getTransactionPool();
+        assertTrue(!txPool.isEmpty());
     }
 
     @Test
     public void addNewBlockToChain() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        ledger.addNewBlockToChain((Block) JSON.fromJson(A_MINED_BLOCK,Block.class));
+        assertTrue(ledger.getBlockChainLedger().size()==2);
     }
 
     @Test
     public void processIncomingBlock() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        ledger.processIncomingBlock((Block) JSON.fromJson(A_MINED_BLOCK,Block.class) );
+        assertTrue(ledger.getBlockChainLedger().size()==2);
     }
 
     @Test
     public void processNewBlockChain() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        List<Block> blockChain = new ArrayList<>();
+        blockChain.add((Block) JSON.fromJson(GENISIS_BLOCK,Block.class));
+        blockChain.add((Block) JSON.fromJson(A_MINED_BLOCK,Block.class));
+        ledger.processNewBlockChain(blockChain);
+        assertTrue(ledger.getBlockChainLedger().size()==2);
     }
 
-    @Test
+    @Test(expected = InsufficientFundsException.class)
     public void createTransaction1() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        ledger.createTransaction("a","b", BigDecimal.TEN);
     }
 
     @Test
     public void getMoneyInSystem() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        assertTrue(ledger.getMoneyInSystem()==null);
     }
 
     @Test
     public void getDifficulty() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        assertTrue(ledger.getDifficulty()==4);
     }
 
     @Test
     public void setDifficulty() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        ledger.setDifficulty(10);
+        assertTrue(ledger.getDifficulty()==10);
     }
 
     @Test
     public void getStats() throws Exception {
+        LedgerService ledger = new LedgerService(broadcastService, keyService);
+        BlockStats x = ledger.getStats();
+        assertTrue((int) x.getStat("cummulative_difficulty") == 1);
+        BlockHeader bh = (BlockHeader) x.getStat("current_last_header");
+        assertTrue(bh.getHash().equals("324f086d2eb360f7479454f337e9f2dedd8d1b0f79339976fa07f6f179ef04ff"));
     }
 
 }
