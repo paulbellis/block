@@ -189,7 +189,8 @@ public class LedgerServiceTest {
         Queue<Transaction> txPoolBefore = ledger.getTransactionPool();
         assertTrue(txPoolBefore.isEmpty());
         Keys key = new DummyKey();
-        Transaction tx = Transaction.valueOf(key, new ArrayList<>(), new ArrayList<>());
+        Transaction tx = (Transaction) JSON.fromJson( A_GOOD_TX , Transaction.class );
+//        Transaction tx = Transaction.valueOf(key, new ArrayList<>(), new ArrayList<>());
         List<Transaction> txPool = new ArrayList<>();
         txPool.add(tx);
         ledger.processNewTransactionPool(txPool);
@@ -206,6 +207,7 @@ public class LedgerServiceTest {
 
     @Test
     public void mineBlock() throws Exception {
+        Mockito.when(keyService.getNodePublicKey()).thenReturn(ADDRESS_WITH_CASH);
         LedgerService ledger = new LedgerService(broadcastService, keyService);
         ledger.mineBlock();
         assertTrue(ledger.getBlockChainLedger().size()==2);
@@ -213,8 +215,12 @@ public class LedgerServiceTest {
 
     @Test
     public void getBalance() throws Exception {
+        Mockito.when(keyService.getNodePublicKey()).thenReturn(ADDRESS_WITH_CASH);
         LedgerService ledger = new LedgerService(broadcastService, keyService);
         ledger.mineBlock();
+        Keys key = Mockito.mock(ECDSA.class);
+        Mockito.when(keyService.getKey(Mockito.anyString())).thenReturn(key);
+        Mockito.when(key.sign(Mockito.anyString())).thenReturn("hello".getBytes());
         ledger.createTransaction(ADDRESS_WITH_CASH, "123", BigDecimal.TEN);
         assertTrue(ledger.getBalance("123").compareTo(BigDecimal.TEN) == 0);
     }

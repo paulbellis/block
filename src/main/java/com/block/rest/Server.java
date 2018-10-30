@@ -1,35 +1,29 @@
 package com.block.rest;
 
 import static spark.Spark.get;
-import static spark.Spark.port;
 import static spark.Spark.post;
 import static spark.Spark.put;
 import static spark.Spark.stop;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import com.block.commons.InsufficientFundsException;
+import com.block.commons.JSON;
+import com.block.message.BroadcastNodesMessage;
+import com.block.message.Message;
+import com.block.message.MessageBody;
+import com.block.message.MessageHeader;
+import com.block.model.AccountTransfer;
+import com.block.model.Block;
+import com.block.model.ResultSet;
+import com.block.model.Transaction;
+import com.block.service.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.block.manager.GetBlockManager;
-import com.block.manager.GetBlockchainManager;
-import com.block.manager.GetServersManager;
-import com.block.manager.GetTransactionPoolManager;
-import com.block.manager.GetUnspentTransactionsManager;
-import com.block.manager.MiningManager;
-import com.block.manager.PostBlockManager;
-import com.block.manager.TransactionManager;
-import com.block.manager.TransferManager;
-import com.block.message.ProcessMessage;
-import com.block.model.MessageParameters;
-import com.block.service.BalanceService;
-import com.block.service.BroadcastService;
-import com.block.service.KeyService;
-import com.block.service.LedgerService;
-import com.block.service.Ledgers;
 
 public class Server {
 
@@ -39,30 +33,8 @@ public class Server {
     private int port;
     private BroadcastService broadcastService;
     private Ledgers ledger;
-    private MessageParameters params = new MessageParameters();
 
-    public void start() {
-        port(port);
-        get("/api/ledger", new GetBlockchainManager(ledger));
-        get("/api/balance/:id", new BalanceService(ledger));
-        //post("/create", new CreateAccountManager(db, ledger));
-        put("/api/transfer", new TransferManager(ledger));
-        post("/api/transaction", new TransactionManager(ledger));
-        //post("/servers", new PostServersManager(broadcastService, ledger));
-        post("/api/servers", new ProcessMessage(params));
-        post("/api/seed", new ProcessMessage(params));
-        get("/api/servers", new GetServersManager(broadcastService));
-        post("/api/stats", new ProcessMessage(params));
-        get("/api/mine", new MiningManager(ledger, broadcastService));
-        post("/api/block", new PostBlockManager(ledger));
-        get("/api/block/:hash", new GetBlockManager(ledger));
-        get("/api/block", new GetBlockManager(ledger));
-        get("/api/pool", new GetTransactionPoolManager(ledger));
-        get("/api/unspent", new GetUnspentTransactionsManager(ledger));
-        startup();
-    }
-
-    private void startup() {
+    public void startup() {
         broadcastService.peerPing(ledger);
     }
 
@@ -84,9 +56,6 @@ public class Server {
         keyService.addNodeKey(user);
         ledger = new LedgerService(broadcastService, keyService);
 
-        params.setBroadcastService(broadcastService);
-        params.setLedgerService(ledger);
-
         if (configFilePath != null) {
             Path path = Paths.get(configFilePath);
             if (path.toFile().exists()) {
@@ -97,12 +66,88 @@ public class Server {
                 }
             }
         }
+        startup();
+    }
+
+    public Ledgers getLedger() {
+        return ledger;
+    }
+
+    public Object apiGetLedger() {
+        return BlockchainService.getBlockChainLedger(ledger);
+    }
+    public BigDecimal apiGetBalanceById(String accountId) {
+        return ledger.getBalance(accountId);
+    }
+    public String apiGetMine() {
+        return MiningService.mine(ledger, broadcastService);
+    }
+
+    public Object apiPutTransfer(AccountTransfer transfer) {
+        try {
+            return TransferService.transfer(ledger, transfer);
+        } catch (InsufficientFundsException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    public Object apiPostTransaction(Transaction tx) {
+        return TransactionService.processIncomingTransaction(ledger, tx);
+    }
+    public String apiGetServers() {
+        return broadcastService.getAddresses();
+    }
+    public String apiPostBlock(Block b) {
+        if (!BlockService.processNewBlock(b, ledger)) {
+            return "FAILED TO PROCESS BLOCK";
+        }
+        else {
+            return "SUCCESS";
+        }
+
+    }
+    public Object apiGetBlock(String hash, String index) {
+        return BlockService.getBlock(hash, index, ledger);
+    }
+
+    public Object apiGetTransactionPool() {
+        return TransactionPoolService.getTransactionPool(ledger);
+    }
+
+    public Object apiGetUnspent() {
+        return UnspentTransactionService.getUnspentTxMap(ledger);
     }
 
     public static void main(String[] args) {
         Server server = new Server();
         server.init(args[0], Integer.valueOf(args[1]), args[2], args[3]);
-        server.start();
     }
 
+    public Object apiProcessMessage(Message msg) {
+        if (msg != null) {
+            MessageHeader header = msg.getHeader();
+            MessageBody body = msg.getBody();
+            switch (header.getType()) {
+                case BROADCAST_NODES:
+                    BroadcastNodesMessage bnm = (BroadcastNodesMessage) JSON.fromJson((String)body.getBody(), BroadcastNodesMessage.class);
+                    return P2PService.processBroadcastNodesMessage(broadcastService, bnm);
+                case SEED_NODE:
+                    BroadcastNodesMessage seed = (BroadcastNodesMessage) JSON.fromJson((String)body.getBody(), BroadcastNodesMessage.class);
+                    if (!broadcastService.getAddressList().containsAll(seed.getNodes())) {
+                        broadcastService.addAddresses(seed.getNodes());
+                        broadcastService.getAndProcessBestBlockChain(ledger);
+                        broadcastService.broadCastMe();
+                    }
+                    return new ResultSet.ResultSetBuilder().setOkStatus().build();
+                case SERVER_NODES:
+                    return new ResultSet.ResultSetBuilder().setOkStatus().setData(broadcastService.getAddresses()).build();
+                case GET_LAST_BLOCK_STATS:
+                    return new ResultSet.ResultSetBuilder().setOkStatus().setData(ledger.getStats()).build();
+                default:
+                    return new ResultSet.ResultSetBuilder().setErrorStatus().setData("Unknown message type").build();
+            }
+        }
+        return null;
+
+    }
 }

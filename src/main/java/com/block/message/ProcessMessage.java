@@ -45,7 +45,7 @@ public class ProcessMessage implements Route {
 			case SERVER_NODES:
 				return new ResultSet.ResultSetBuilder().setOkStatus().setData(broadcastService.getAddresses()).build();
 			case GET_LAST_BLOCK_STATS:
-				return new ResultSet.ResultSetBuilder().setOkStatus().setData(ledger.getStats(null)).build();
+				return new ResultSet.ResultSetBuilder().setOkStatus().setData(ledger.getStats()).build();
 			default:
 				return new ResultSet.ResultSetBuilder().setErrorStatus().setData("Unknown message type").build();
 			}

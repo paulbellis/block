@@ -15,7 +15,6 @@ public class TransactionManager implements Route {
 	public TransactionManager(Ledgers ledger2) {
 		this.ledger = ledger2;
 	}
-
 	@Override
 	public Object handle(Request request, Response response) throws Exception {
 		Transaction tx  = (Transaction) JSON.fromJson(request.body(), Transaction.class);

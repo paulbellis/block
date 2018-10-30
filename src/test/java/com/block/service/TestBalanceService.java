@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
+import com.block.rest.Api;
 import org.apache.http.client.ClientProtocolException;
 import org.junit.Test;
 
@@ -16,10 +17,9 @@ public class TestBalanceService {
 	
 	@Test
 	public void test() throws ClientProtocolException, IOException, InterruptedException {
-		Server server = new Server();
-		server.init("http://localhost",4567,"paul", "config.txt");
-		server.start();
-	
+		Api server = new Api();
+		server.start("http://localhost",4567,"paul", "config.txt");
+
 		try {
 			Thread.sleep(3000);
 		} catch (InterruptedException e) {

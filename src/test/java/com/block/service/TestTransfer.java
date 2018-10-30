@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import com.block.rest.Api;
 import org.apache.http.client.ClientProtocolException;
 
 import com.block.rest.Server;
@@ -16,10 +17,9 @@ public class TestTransfer {
 	private int id = 1;
 
 	public void test() throws ClientProtocolException, IOException, InterruptedException {
-		Server server = new Server();
-		server.init("http://localhost",4567,"paul", "config.txt");
-		server.start();
-	
+		Api server = new Api();
+		server.start("http://localhost",4567,"paul", "config.txt");
+
 		try {
 			Thread.sleep(3000);
 		} catch (InterruptedException e) {

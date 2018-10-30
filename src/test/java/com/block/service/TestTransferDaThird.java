@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import com.block.rest.Api;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,9 +19,8 @@ public class TestTransferDaThird {
 
 	public void testMultiTransfer() throws ClientProtocolException, IOException, InterruptedException {
 		int accountCount = 100;
-		Server server = new Server();
-		server.init("http://localhost",4567,"paul", "config.txt");
-		server.start();
+		Api server = new Api();
+		server.start("http://localhost",4567,"paul", "config.txt");
 
 
 		ExecutorService service = Executors.newFixedThreadPool(10);
